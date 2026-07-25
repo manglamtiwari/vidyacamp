@@ -1,11 +1,26 @@
 "use client";
-
+import {useState} from "react";
 export default function RegisterPage() {
+    const [schoolName, setSchoolName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
-    function handleRegisterButton(){
-        console.log("Register button clicked");
+   function handleRegisterButton() {
+    console.log("Register button clicked");
+    console.log("School Name:", schoolName);
+    console.log("Email:", email);
+    console.log("Password:", password);
 
+    const handlePasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
+
+    if(handlePasswordRegex.test(password)) {
+        console.log("Password is valid");
     }
+    else
+    {
+        console.log("Password is invalid");
+    }
+}
     return (
         <main className="min-h-screen bg-emerald-50 flex items-center justify-center">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
@@ -21,6 +36,8 @@ export default function RegisterPage() {
                         type="text"
                         placeholder="Enter school name"
                         className="w-full border rounded-md p-3"
+                        value={schoolName}
+                        onChange={(e) => setSchoolName(e.target.value)}
                     />
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">
@@ -31,6 +48,8 @@ export default function RegisterPage() {
                             type="email"
                             placeholder="Enter email"
                             className="w-full border rounded-md p-3"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
                     <div className="mb-6">
@@ -42,10 +61,11 @@ export default function RegisterPage() {
                             type="password"
                             placeholder="Enter password"
                             className="w-full border rounded-md p-3"
+                            value = {password}
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
                     <button
-                        // className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700"
                         className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700"
                         onClick={handleRegisterButton}
                     >
