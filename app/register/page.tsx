@@ -6,12 +6,21 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [emailValidation, setEmailValidation] = useState("");
+    const [schoolNameValidation, setSchoolNameValidation] = useState("");
 
     function handleRegisterButton() {
         console.log("Register button clicked");
         console.log("School Name:", schoolName);
         console.log("Email:", email);
         console.log("Password:", password);
+
+        if(schoolName.trim() === "")
+        {
+            setSchoolNameValidation("Providing School name is mandatory.");
+            return;
+        }
+        setSchoolNameValidation("");
+        console.log("School name is provided");
 
         const handlePasswordRegex =
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
@@ -43,7 +52,11 @@ export default function RegisterPage() {
                         className="w-full border rounded-md p-3"
                         value={schoolName}
                         onChange={(e) => setSchoolName(e.target.value)}
-                    />
+                    />{schoolNameValidation && (
+                        <p className="text-red-500 text-sm mt-1">
+                            {schoolNameValidation}
+                        </p>
+                    )}
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-2 mt-4">
                             Email
