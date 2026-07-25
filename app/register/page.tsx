@@ -1,26 +1,31 @@
 "use client";
-import {useState} from "react";
+import { useState } from "react";
 export default function RegisterPage() {
     const [schoolName, setSchoolName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [emailValidation, setEmailValidation] = useState("");
 
-   function handleRegisterButton() {
-    console.log("Register button clicked");
-    console.log("School Name:", schoolName);
-    console.log("Email:", email);
-    console.log("Password:", password);
+    function handleRegisterButton() {
+        console.log("Register button clicked");
+        console.log("School Name:", schoolName);
+        console.log("Email:", email);
+        console.log("Password:", password);
 
-    const handlePasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
+        const handlePasswordRegex =
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
 
-    if(handlePasswordRegex.test(password)) {
+        if (!handlePasswordRegex.test(password)) {
+            setPasswordError(
+                "Password must be at least 8 characters and contain one uppercase letter, one lowercase letter, one number, and one special character."
+            );
+            return;
+        }
+
+        setPasswordError("");
         console.log("Password is valid");
     }
-    else
-    {
-        console.log("Password is invalid");
-    }
-}
     return (
         <main className="min-h-screen bg-emerald-50 flex items-center justify-center">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
@@ -40,7 +45,7 @@ export default function RegisterPage() {
                         onChange={(e) => setSchoolName(e.target.value)}
                     />
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">
+                        <label className="block text-sm font-medium mb-2 mt-4">
                             Email
                         </label>
 
@@ -61,12 +66,22 @@ export default function RegisterPage() {
                             type="password"
                             placeholder="Enter password"
                             className="w-full border rounded-md p-3"
-                            value = {password}
+                            value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
+                        {passwordError && (
+                            <p className="text-red-500 text-sm mt-1">
+                                {passwordError}
+                            </p>
+                        )}
                     </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Password must be at least 8 characters and include an uppercase letter,
+                        a lowercase letter, a number, and a special character.
+
+                    </p>
                     <button
-                        className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700"
+                        className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700 mt-4"
                         onClick={handleRegisterButton}
                     >
                         Register
