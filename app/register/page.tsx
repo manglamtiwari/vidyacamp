@@ -32,8 +32,7 @@ export default function RegisterPage() {
 
         if (!handlePasswordRegex.test(password)) {
             setPasswordError(
-                "Password must be at least 8 characters and contain one uppercase letter, one lowercase letter, one number, and one special character."
-            );
+            "Password must be as per below criteria.");
             hasError = true;
         } else {
             setPasswordError("");
