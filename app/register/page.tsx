@@ -9,18 +9,23 @@ export default function RegisterPage() {
     const [schoolNameValidation, setSchoolNameValidation] = useState("");
 
     function handleRegisterButton() {
-        console.log("Register button clicked");
-        console.log("School Name:", schoolName);
-        console.log("Email:", email);
-        console.log("Password:", password);
+        let hasError = false;
 
-        if(schoolName.trim() === "")
-        {
+        if (schoolName.trim() === "") {
             setSchoolNameValidation("Providing School name is mandatory.");
-            return;
+            hasError = true;
+        } else {
+            setSchoolNameValidation("");
         }
-        setSchoolNameValidation("");
-        console.log("School name is provided");
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            setEmailValidation("Please enter a valid email address.");
+            hasError = true;
+        } else {
+            setEmailValidation("");
+        }
 
         const handlePasswordRegex =
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
@@ -29,11 +34,17 @@ export default function RegisterPage() {
             setPasswordError(
                 "Password must be at least 8 characters and contain one uppercase letter, one lowercase letter, one number, and one special character."
             );
+            hasError = true;
+        } else {
+            setPasswordError("");
+        }
+
+        if (hasError) {
             return;
         }
 
-        setPasswordError("");
-        console.log("Password is valid");
+        console.log("All validations passed.");
+
     }
     return (
         <main className="min-h-screen bg-emerald-50 flex items-center justify-center">
@@ -69,6 +80,11 @@ export default function RegisterPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
+                        {emailValidation && (
+                            <p className="text-red-500 text-sm mt-1">
+                                {emailValidation}
+                            </p>
+                        )}
                     </div>
                     <div className="mb-6">
                         <label className="block text-sm font-medium mb-2">
