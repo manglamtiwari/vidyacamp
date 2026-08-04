@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { useRouter } from "next/navigation";
 export default function RegisterPage() {
+    const router = useRouter();
     const [schoolName, setSchoolName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -8,7 +11,7 @@ export default function RegisterPage() {
     const [emailValidation, setEmailValidation] = useState("");
     const [schoolNameValidation, setSchoolNameValidation] = useState("");
 
-    function handleRegisterButton() {
+    async function handleRegisterButton() {
         let hasError = false;
 
         if (schoolName.trim() === "") {
@@ -32,7 +35,7 @@ export default function RegisterPage() {
 
         if (!handlePasswordRegex.test(password)) {
             setPasswordError(
-            "Password must be as per below criteria.");
+                "Password must be as per below criteria.");
             hasError = true;
         } else {
             setPasswordError("");
@@ -42,7 +45,49 @@ export default function RegisterPage() {
             return;
         }
 
-        console.log("All validations passed.");
+        // Register a new user in Supabase Authentication.
+        // On success, returns the created user in `data.user`.
+        // On failure, returns an error object describing why registration failed.
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+        });
+
+        // Handle any errors returned by the Supabase Authentication API
+        if (error) {
+            setEmailValidation(error.message);
+            return;
+        }
+
+        // Ensure a valid user object was returned before continuing
+        // This block is checking whether Supabase successfully returned a user object.
+        // Stop if the authenticated user was not created successfully
+        if (!data.user) {
+            setEmailValidation("Registration failed. Please try again.");
+            return;
+        }
+
+        const user = data.user;
+
+        // Insert a new school record into the "schools" table
+        // and associate it with the authenticated user
+        const { error: schoolError } = await supabase
+            .from("schools")
+            .insert({
+                school_name: schoolName,
+                owner_user_id: user.id,
+            });
+
+        // Handle any database errors while inserting the school
+        if (schoolError) {
+            console.error(schoolError);
+            return;
+        }
+
+        // post successful registration, redirect the user to the login page
+        router.push("/login");
+
+        // console.log("All validations passed."); dont uncomment
 
     }
     return (
