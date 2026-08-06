@@ -63,39 +63,41 @@ export default function LoginPage() {
                         Login Page
                     </h1>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">
+                        <label htmlFor="email" className="block text-sm font-medium mb-2">
                             Email
                         </label>
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="Enter Email address"
+                            className="w-full border rounded-md p-3"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)} />
+                        {emailValidation && (
+                            <p className="text-red-500 text-sm mt-1">
+                                {emailValidation}
+                            </p>
+                        )}
                     </div>
-                    <input
-                        type="email"
-                        placeholder="Enter Email address"
-                        className="w-full border rounded-md p-3"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)} />
-                    {emailValidation && (
-                        <p className="text-red-500 text-sm mt-1">
-                            {emailValidation}
-                        </p>
-                    )}
+
 
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2 mt-4">
+                        <label htmlFor="password" className="block text-sm font-medium mb-2 mt-4">
                             Password
                         </label>
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder="Enter Password"
+                            className="w-full border rounded-md p-3"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)} />
+                        {passwordValidation && (
+                            <p className="text-red-500 text-sm mt-1">
+                                {passwordValidation}
+                            </p>
+                        )}
                     </div>
-                    <input
-                        type="password"
-                        placeholder="Enter Password"
-                        className="w-full border rounded-md p-3"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)} />
-                    {passwordValidation && (
-                        <p className="text-red-500 text-sm mt-1">
-                            {passwordValidation}
-                        </p>
-                    )}
-
 
                     <div className="mt-4">
 
