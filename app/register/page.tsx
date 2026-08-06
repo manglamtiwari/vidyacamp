@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
+import type { SyntheticEvent } from "react";
+
 export default function RegisterPage() {
     const router = useRouter();
     const [schoolName, setSchoolName] = useState("");
@@ -11,7 +13,11 @@ export default function RegisterPage() {
     const [emailValidation, setEmailValidation] = useState("");
     const [schoolNameValidation, setSchoolNameValidation] = useState("");
 
-    async function handleRegisterButton() {
+    async function handleRegisterButton(e: SyntheticEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setSchoolNameValidation("");
+        setEmailValidation("");
+        setPasswordError("");
         let hasError = false;
 
         if (schoolName.trim() === "") {
@@ -93,73 +99,77 @@ export default function RegisterPage() {
     return (
         <main className="min-h-screen bg-emerald-50 flex items-center justify-center">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-6">
-                    Register School
-                </h1>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">
-                        School Name
-                    </label>
-
-                    <input
-                        type="text"
-                        placeholder="Enter school name"
-                        className="w-full border rounded-md p-3"
-                        value={schoolName}
-                        onChange={(e) => setSchoolName(e.target.value)}
-                    />{schoolNameValidation && (
-                        <p className="text-red-500 text-sm mt-1">
-                            {schoolNameValidation}
-                        </p>
-                    )}
+                <form noValidate onSubmit={handleRegisterButton} >
+                    <h1 className="text-3xl font-bold text-center mb-6">
+                        Register School
+                    </h1>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2 mt-4">
-                            Email
+                        <label htmlFor="schoolName" className="block text-sm font-medium mb-2">
+                            School Name
                         </label>
 
                         <input
-                            type="email"
-                            placeholder="Enter email"
+                            id="schoolName"
+                            type="text"
+                            placeholder="Enter school name"
                             className="w-full border rounded-md p-3"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                        {emailValidation && (
+                            value={schoolName}
+                            onChange={(e) => setSchoolName(e.target.value)}
+                        />{schoolNameValidation && (
                             <p className="text-red-500 text-sm mt-1">
-                                {emailValidation}
+                                {schoolNameValidation}
                             </p>
                         )}
-                    </div>
-                    <div className="mb-6">
-                        <label className="block text-sm font-medium mb-2">
-                            Password
-                        </label>
+                        <div className="mb-4">
+                            <label htmlFor="email" className="block text-sm font-medium mb-2 mt-4">
+                                Email
+                            </label>
 
-                        <input
-                            type="password"
-                            placeholder="Enter password"
-                            className="w-full border rounded-md p-3"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        {passwordError && (
-                            <p className="text-red-500 text-sm mt-1">
-                                {passwordError}
-                            </p>
-                        )}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Password must be at least 8 characters and include an uppercase letter,
-                        a lowercase letter, a number, and a special character.
+                            <input
+                                id="email"
+                                type="email"
+                                placeholder="Enter email"
+                                className="w-full border rounded-md p-3"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            {emailValidation && (
+                                <p className="text-red-500 text-sm mt-1">
+                                    {emailValidation}
+                                </p>
+                            )}
+                        </div>
+                        <div className="mb-6">
+                            <label htmlFor="password" className="block text-sm font-medium mb-2">
+                                Password
+                            </label>
 
-                    </p>
-                    <button
-                        className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700 mt-4"
-                        onClick={handleRegisterButton}
-                    >
-                        Register
-                    </button>
-                </div>
+                            <input
+                                id="password"
+                                type="password"
+                                placeholder="Enter password"
+                                className="w-full border rounded-md p-3"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            {passwordError && (
+                                <p className="text-red-500 text-sm mt-1">
+                                    {passwordError}
+                                </p>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Password must be at least 8 characters and include an uppercase letter,
+                            a lowercase letter, a number, and a special character.
+
+                        </p>
+                        <button
+                            className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700 mt-4"
+                        >
+                            Register
+                        </button>
+                    </div>
+                </form>
             </div>
         </main>
     );
