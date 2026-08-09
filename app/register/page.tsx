@@ -12,6 +12,7 @@ export default function RegisterPage() {
     const [passwordError, setPasswordError] = useState("");
     const [emailValidation, setEmailValidation] = useState("");
     const [schoolNameValidation, setSchoolNameValidation] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function handleRegisterButton(e: SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -50,6 +51,7 @@ export default function RegisterPage() {
         if (hasError) {
             return;
         }
+        setIsSubmitting(true);
 
         // Register a new user in Supabase Authentication.
         // On success, returns the created user in `data.user`.
@@ -61,6 +63,7 @@ export default function RegisterPage() {
 
         // Handle any errors returned by the Supabase Authentication API
         if (error) {
+            setIsSubmitting(false);
             setEmailValidation(error.message);
             return;
         }
@@ -69,6 +72,7 @@ export default function RegisterPage() {
         // This block is checking whether Supabase successfully returned a user object.
         // Stop if the authenticated user was not created successfully
         if (!data.user) {
+            setIsSubmitting(false);
             setEmailValidation("Registration failed. Please try again.");
             return;
         }
@@ -86,6 +90,7 @@ export default function RegisterPage() {
 
         // Handle any database errors while inserting the school
         if (schoolError) {
+            setIsSubmitting(false);
             console.error(schoolError);
             return;
         }
@@ -166,7 +171,7 @@ export default function RegisterPage() {
                         <button
                             className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700 mt-4"
                         >
-                            Register
+                            {isSubmitting ? "Registering..." : "Register"}
                         </button>
                     </div>
                 </form>

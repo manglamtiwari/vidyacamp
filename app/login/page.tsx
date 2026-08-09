@@ -12,6 +12,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [passwordValidation, setPasswordValidation] = useState("");
     const [loginError, setLoginError] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function handleLogin(e: SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -35,6 +36,7 @@ export default function LoginPage() {
         if (hasError) {
             return;
         }
+        setIsSubmitting(true);
 
         const { data, error } = await supabase.auth.signInWithPassword(
             {
@@ -43,11 +45,13 @@ export default function LoginPage() {
         );
 
         if (error) {
+            setIsSubmitting(false);
             setLoginError(error.message);
             return;
         }
 
         if (!data.user) {
+            setIsSubmitting(false);
             setLoginError("Login failed. Please try again.");
             return;
         }
@@ -100,7 +104,6 @@ export default function LoginPage() {
                     </div>
 
                     <div className="mt-4">
-
                         {loginError && (
                             <p className="mb-3 text-red-500 text-sm text-center">
                                 {loginError}
@@ -108,9 +111,9 @@ export default function LoginPage() {
                         )}
                         <button type="submit"
                             className="w-full bg-emerald-600 text-white py-3 rounded-md hover:bg-emerald-700">
-                            Login
+                            {isSubmitting ? "Logging in..." : "Login"}
+                            {/* Login */}
                         </button>
-
                     </div>
 
                 </form>
