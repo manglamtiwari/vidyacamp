@@ -3,7 +3,9 @@
 import { BookOpen, Megaphone, PartyPopper, CalendarDays } from "lucide-react";
 import Link from "next/link";
 
+
 export default function DashboardPage() {
+
     return (
         <main className="flex min-h-screen bg-emerald-50 items-center justify-center">
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-4xl">

@@ -10,14 +10,43 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Sidebar() {
+    const [schoolName, setSchoolName] = useState("");
+    useEffect(() => {
+        async function getSchoolName() {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+
+            if (!user) {
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from("schools")
+                .select("school_name")
+                .eq("owner_user_id", user.id)
+                .single();
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            setSchoolName(data.school_name);
+        }
+
+        getSchoolName();
+    }, []);
     return (
         <aside className="w-64 h-screen bg-white shadow-md p-6 flex flex-col">
 
             {/* School name */}
             <h2 className="text-xl font-bold text-emerald-800 mb-8">
-                VidyaCamp
+                {schoolName || "VidyaCamp"}
             </h2>
 
             {/* Navigation */}
