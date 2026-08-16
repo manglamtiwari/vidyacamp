@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-
+// this page display homwork summary. 
 export default function HomeworkPage() {
     const [homework, setHomework] = useState<any[]>([]);
 
@@ -27,14 +27,14 @@ export default function HomeworkPage() {
     const handleDelete = async (id: string) => {
 
         const confirmed = window.confirm(
-        "Are you sure you want to delete this homework?"
-    );
+            "Are you sure you want to delete this homework?"
+        );
 
-    if (!confirmed) {
-        return;
-    }
+        if (!confirmed) {
+            return;
+        }
 
-    
+
         const { error } = await supabase
             .from("homework")
             .delete()
@@ -42,6 +42,7 @@ export default function HomeworkPage() {
 
         if (error) {
             console.error("Could not delete homework:", error);
+            alert("Could not delete homework. Please try again.");
             return;
         }
 
@@ -97,18 +98,27 @@ export default function HomeworkPage() {
                                     </h2>
 
                                     <p className="text-sm text-gray-500 mt-1">
-                                        Class {item.class} · Section {item.section} · {item.subject}
+                                        Class {item.class}
+                                        {item.section && ` · Section ${item.section}`}
+                                        {item.subject && ` · ${item.subject}`}
                                     </p>
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <p className="text-sm font-medium text-emerald-700">
-                                        Due: {new Date(item.due_date).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric",
-                                        })}
-                                    </p>
+
+                                    {item.due_date ? (
+                                        <p className="text-sm font-medium text-emerald-700">
+                                            Due: {new Date(item.due_date).toLocaleDateString("en-US", {
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric",
+                                            })}
+                                        </p>
+                                    ) : (
+                                        <p className="text-sm font-medium text-gray-500">
+                                            No due date
+                                        </p>
+                                    )}
 
                                     <Link
                                         href={`/homework/${item.id}/edit`}

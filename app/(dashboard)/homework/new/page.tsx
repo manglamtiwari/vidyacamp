@@ -11,10 +11,14 @@ export default function NewHomeworkPage() {
     const [homeworkDescription, setHomeworkDescription] = useState("");
     const [dueDate, setDueDate] = useState("");
     const router = useRouter();
+    const today = new Date().toISOString().split("T")[0];
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-
+        if (!homeworkSummary.trim()) {
+            alert("Homework summary cannot be empty.");
+            return;
+        }
         const {
             data: { user },
         } = await supabase.auth.getUser();
@@ -42,9 +46,9 @@ export default function NewHomeworkPage() {
                 class: selectedClass,
                 section: selectedSection,
                 subject: selectedSubject,
-                summary: homeworkSummary,
+                summary: homeworkSummary.trim(),
                 description: homeworkDescription,
-                due_date: dueDate,
+                due_date: dueDate || null,
                 created_by: user.id,
             });
 
@@ -67,7 +71,7 @@ export default function NewHomeworkPage() {
             </p>
             <div className="mt-6">
                 <label htmlFor="class" className="block text-sm font-medium mb-2">
-                    Class
+                    Class <span className="text-red-500">*</span>
                 </label>
 
                 <select
@@ -75,6 +79,7 @@ export default function NewHomeworkPage() {
                     value={selectedClass}
                     onChange={e => setSelectedClass(e.target.value)}
                     className="w-full border rounded-md p-3"
+                    required
                 >
                     <option value="">Select class</option>
                     <option value="1">Class 1</option>
@@ -107,7 +112,7 @@ export default function NewHomeworkPage() {
                     htmlFor="subject"
                     className="block text-sm font-medium mb-2"
                 >
-                    Subject
+                    Subject <span className="text-red-500">*</span>
                 </label>
 
                 <select
@@ -115,6 +120,7 @@ export default function NewHomeworkPage() {
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     className="w-full border rounded-md p-3"
+                    required
                 >
                     <option value="">Select subject</option>
                     <option value="mathematics">Mathematics</option>
@@ -127,7 +133,7 @@ export default function NewHomeworkPage() {
                 <label
                     htmlFor="summary"
                     className="block text-sm font-medium mb-2">
-                    Homework Summary
+                    Homework Summary <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -137,6 +143,7 @@ export default function NewHomeworkPage() {
                     onChange={(e) => setHomeworkSummary(e.target.value)}
                     placeholder="e.g. Complete Chapter 3 exercises"
                     className="w-full border rounded-md p-3"
+                    required
                 />
 
             </div>
@@ -172,6 +179,10 @@ export default function NewHomeworkPage() {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
+                    min={today}
+                    onClick={(e) => {
+                        e.currentTarget.showPicker();
+                    }}
                     className="w-full border rounded-md p-3"
                 />
             </div>

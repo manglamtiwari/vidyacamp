@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import Link from "next/link";
 
 export default function EditHomeworkPage() {
     const params = useParams();
@@ -16,6 +15,7 @@ export default function EditHomeworkPage() {
     const [homeworkDescription, setHomeworkDescription] = useState("");
     const [dueDate, setDueDate] = useState("");
     const router = useRouter();
+    const today = new Date().toISOString().split("T")[0];
 
     useEffect(() => {
         async function getHomework() {
@@ -35,22 +35,27 @@ export default function EditHomeworkPage() {
             setSelectedSubject(data.subject);
             setHomeworkSummary(data.summary);
             setHomeworkDescription(data.description || "");
-            setDueDate(data.due_date);
+            setDueDate(data.due_date || "");
         }
 
         getHomework();
     }, [homeworkId]);
 
-    const handleUpdate = async () => {
+    const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!homeworkSummary.trim()) {
+            alert("Homework summary cannot be empty.");
+            return;
+        }
         const { error } = await supabase
             .from("homework")
             .update({
                 class: selectedClass,
                 section: selectedSection,
                 subject: selectedSubject,
-                summary: homeworkSummary,
+                summary: homeworkSummary.trim(),
                 description: homeworkDescription,
-                due_date: dueDate,
+                due_date: dueDate || null,
             })
             .eq("id", homeworkId);
 
@@ -65,7 +70,7 @@ export default function EditHomeworkPage() {
     };
 
     return (
-        <div>
+        <form onSubmit={handleUpdate}>
             <h1 className="text-3xl font-bold">
                 Edit Homework
             </h1>
@@ -79,13 +84,14 @@ export default function EditHomeworkPage() {
                     htmlFor="class"
                     className="block text-sm font-medium mb-2"
                 >
-                    Class
+                    Class <span className="text-red-500">*</span>
                 </label>
 
                 <select
                     id="class"
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
+                    required
                     className="w-full border rounded-md p-3"
                 >
                     <option value="">Select class</option>
@@ -121,13 +127,14 @@ export default function EditHomeworkPage() {
                     htmlFor="subject"
                     className="block text-sm font-medium mb-2"
                 >
-                    Subject
+                    Subject <span className="text-red-500">*</span>
                 </label>
 
                 <select
                     id="subject"
                     value={selectedSubject}
                     onChange={(e) => setSelectedSubject(e.target.value)}
+                    required
                     className="w-full border rounded-md p-3"
                 >
                     <option value="">Select subject</option>
@@ -142,7 +149,7 @@ export default function EditHomeworkPage() {
                     htmlFor="summary"
                     className="block text-sm font-medium mb-2"
                 >
-                    Homework Summary
+                    Homework Summary <span className="text-red-500">*</span>
                 </label>
 
                 <input
@@ -150,6 +157,7 @@ export default function EditHomeworkPage() {
                     type="text"
                     value={homeworkSummary}
                     onChange={(e) => setHomeworkSummary(e.target.value)}
+                    required
                     className="w-full border rounded-md p-3"
                 />
             </div>
@@ -184,6 +192,10 @@ export default function EditHomeworkPage() {
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
+                    min={today}
+                    onClick={(e) => {
+                        e.currentTarget.showPicker();
+                    }}
                     className="w-full border rounded-md p-3"
                 />
             </div>
@@ -200,13 +212,12 @@ export default function EditHomeworkPage() {
                 </button>
 
                 <button
-                    type="button"
-                    onClick={handleUpdate}
+                    type="submit"
                     className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
                 >
                     Update Homework
                 </button>
             </div>
-        </div>
+        </form>
     );
 }
