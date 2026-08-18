@@ -22,10 +22,9 @@ export default function DashboardPage() {
                 {/* Cards */}
                 <div className="grid grid-cols-2 gap-6 text-emerald-800">
 
-                    {/* <div className="bg-emerald-50 p-8 rounded-lg text-center shadow-md text-2xl font-semibold"> */}
                     <Link href="/homework" className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold hover:bg-emerald-200 hover:scale-105 transition">
-                    <div className="flex flex-col items-center">
-                        
+                        <div className="flex flex-col items-center">
+
                             <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
                                 <BookOpen size={64} />
                             </div>
@@ -33,19 +32,21 @@ export default function DashboardPage() {
                             <div className="text-black text-sm mt-2">
                                 View and manage homework
                             </div>
-                       
-                    </div>
+
+                        </div>
                     </Link>
 
-                    <div className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold">
-                        <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
-                            <Megaphone size={64} />
+                    <Link href="/notices" className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold hover:bg-emerald-200 hover:scale-105 transition">
+                        <div className="flex flex-col items-center">
+                            <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
+                                <Megaphone size={64} />
+                            </div>
+                            <span>Notices</span>
+                            <div className="text-black text-sm mt-2">
+                                Check important notices and announcements
+                            </div>
                         </div>
-                        <span>Notices</span>
-                        <div className="text-black text-sm mt-2">
-                            Check important notices and announcements
-                        </div>
-                    </div>
+                    </Link>
 
                     <div className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold">
                         <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
