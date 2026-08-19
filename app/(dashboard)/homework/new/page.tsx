@@ -10,6 +10,8 @@ export default function NewHomeworkPage() {
     const [homeworkSummary, setHomeworkSummary] = useState("");
     const [homeworkDescription, setHomeworkDescription] = useState("");
     const [dueDate, setDueDate] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
 
@@ -19,12 +21,16 @@ export default function NewHomeworkPage() {
             alert("Homework summary cannot be empty.");
             return;
         }
+
+        setIsSaving(true);
+
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
             console.error("No logged-in user found.");
+            setIsSaving(false);
             return;
         }
 
@@ -36,6 +42,7 @@ export default function NewHomeworkPage() {
 
         if (schoolError || !school) {
             console.error("Could not find school:", schoolError);
+            setIsSaving(false);
             return;
         }
 
@@ -52,8 +59,11 @@ export default function NewHomeworkPage() {
                 created_by: user.id,
             });
 
+        setIsSaving(false);
+
         if (homeworkError) {
             console.error("Could not save homework:", homeworkError);
+            alert("Could not save homework. Please try again.");
             return;
         }
 
@@ -199,9 +209,11 @@ export default function NewHomeworkPage() {
 
                 <button
                     type="submit"
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
+                    disabled={isSaving}
+                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Save Homework
+
+                    {isSaving ? "Saving..." : "Save Homework"}
                 </button>
             </div>
         </form>

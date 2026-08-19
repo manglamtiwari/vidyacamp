@@ -13,11 +13,16 @@ export default function EditNoticePage() {
     const [noticeTitle, setNoticeTitle] = useState("");
     const [noticeContent, setNoticeContent] = useState("");
     const [publishDate, setPublishDate] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
+
+
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
 
     useEffect(() => {
         async function getNotice() {
+            setIsLoading(true);
             const { data, error } = await supabase
                 .from("notices")
                 .select("*")
@@ -26,12 +31,14 @@ export default function EditNoticePage() {
 
             if (error) {
                 console.error("Could not load notice:", error);
+                setIsLoading(false);
                 return;
             }
 
             setNoticeTitle(data.title);
             setNoticeContent(data.content);
             setPublishDate(data.publish_date || "");
+            setIsLoading(false);
         }
         getNotice();
     }, [noticeId]);
@@ -49,6 +56,8 @@ export default function EditNoticePage() {
             return;
         }
 
+        setIsUpdating(true);
+
         const { error } = await supabase
             .from("notices")
             .update({
@@ -58,8 +67,11 @@ export default function EditNoticePage() {
             })
             .eq("id", noticeId);
 
+        setIsUpdating(false);
+
         if (error) {
             console.error("Could not update notice:", error);
+            alert("Could not update notice. Please try again.");
             return;
         }
 
@@ -67,6 +79,17 @@ export default function EditNoticePage() {
         router.push("/notices");
 
     }
+
+    // loading code here 
+    if (isLoading) {
+        return (
+            <div className="bg-white rounded-xl shadow-sm p-10 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4">Loading notice details...</p>
+            </div>
+        );
+    }
+
     return (
         <form onSubmit={handleUpdate}>
             <h1 className="text-3xl font-bold">
@@ -146,9 +169,11 @@ export default function EditNoticePage() {
 
                 <button
                     type="submit"
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
+                    disabled={isUpdating}
+                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Update Notice
+                    {/* Update Notice */}
+                    {isUpdating ? "Updating..." : "Update Notice"}
                 </button>
             </div>
 

@@ -14,19 +14,25 @@ export default function EditHomeworkPage() {
     const [homeworkSummary, setHomeworkSummary] = useState("");
     const [homeworkDescription, setHomeworkDescription] = useState("");
     const [dueDate, setDueDate] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
+
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
 
     useEffect(() => {
         async function getHomework() {
+            setIsLoading(true);
             const { data, error } = await supabase
                 .from("homework")
                 .select("*")
                 .eq("id", homeworkId)
                 .single();
 
+                
             if (error) {
                 console.error("Could not load homework:", error);
+                setIsLoading(false);
                 return;
             }
 
@@ -36,6 +42,7 @@ export default function EditHomeworkPage() {
             setHomeworkSummary(data.summary);
             setHomeworkDescription(data.description || "");
             setDueDate(data.due_date || "");
+            setIsLoading(false);
         }
 
         getHomework();
@@ -47,6 +54,9 @@ export default function EditHomeworkPage() {
             alert("Homework summary cannot be empty.");
             return;
         }
+
+        setIsUpdating(true);
+
         const { error } = await supabase
             .from("homework")
             .update({
@@ -60,14 +70,27 @@ export default function EditHomeworkPage() {
             .eq("id", homeworkId);
 
 
+        setIsUpdating(false);
+
         if (error) {
             console.error("Could not update homework:", error);
+            alert("Could not update homework. Please try again.");
             return;
         }
 
         console.log("Homework updated successfully");
         router.push("/homework");
     };
+
+    // loading code here 
+    if (isLoading) {
+        return (
+            <div className="bg-white rounded-xl shadow-sm p-10 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4">Loading homework...</p>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleUpdate}>
@@ -213,9 +236,10 @@ export default function EditHomeworkPage() {
 
                 <button
                     type="submit"
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
+                    disabled ={isUpdating}
+                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Update Homework
+                    {isUpdating ? "Updating..." : "Update Homework"}
                 </button>
             </div>
         </form>

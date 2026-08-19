@@ -58,16 +58,17 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    {/* <div className="bg-emerald-50 p-8 rounded-lg text-center shadow-md text-2xl font-semibold"> */}
-                    <div className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold">
-                        <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
-                            <PartyPopper size={64} />
+                    <Link href="/events" className="flex flex-col items-center bg-emerald-50 p-8 rounded-lg shadow-md text-2xl font-semibold hover:bg-emerald-200 hover:scale-105 transition">
+                        <div className="flex flex-col items-center">
+                            <div className="flex rounded-full bg-emerald-100 w-32 h-32 justify-center items-center mb-4">
+                                <PartyPopper size={64} />
+                            </div>
+                            <span>Events</span>
+                            <div className="text-black text-sm mt-2">
+                                Discover upcoming events and activities
+                            </div>
                         </div>
-                        <span>Events</span>
-                        <div className="text-black text-sm mt-2">
-                            Discover upcoming events and activities
-                        </div>
-                    </div>
+                    </Link>
 
                 </div>
 

@@ -8,6 +8,7 @@ export default function NewNoticePage() {
     const [noticeTitle, setNoticeTitle] = useState("");
     const [noticeContent, setNoticeContent] = useState("");
     const [publishDate, setPublishDate] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
     const router = useRouter();
     const today = new Date().toISOString().split("T")[0];
@@ -25,12 +26,15 @@ export default function NewNoticePage() {
             return;
         }
 
+        setIsSaving(true);
+
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
             console.error("No logged-in user found.");
+            setIsSaving(false);
             return;
         }
 
@@ -42,6 +46,7 @@ export default function NewNoticePage() {
 
         if (schoolError || !school) {
             console.error("Could not find school:", schoolError);
+            setIsSaving(false);
             return;
         }
 
@@ -55,8 +60,11 @@ export default function NewNoticePage() {
                 created_by: user.id,
             });
 
+        setIsSaving(false);
+
         if (noticeError) {
             console.error("Could not save notice:", noticeError);
+            alert("Could not save notice. Please try again.");
             return;
         }
 
@@ -144,9 +152,11 @@ export default function NewNoticePage() {
 
                 <button
                     type="submit"
-                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
+                    disabled={isSaving}
+                    className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Save Notice
+
+                    {isSaving ? "Saving..." : "Save Notice"}
                 </button>
             </div>
         </form>
