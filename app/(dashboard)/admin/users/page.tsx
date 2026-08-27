@@ -32,8 +32,11 @@ export default function AdminUsersPage() {
     const [activeTab, setActiveTab] =
         useState<Tab>("teachers");
 
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
-    const [students, setStudents] = useState<Student[]>([]);
+    const [teachers, setTeachers] =
+        useState<Teacher[]>([]);
+
+    const [students, setStudents] =
+        useState<Student[]>([]);
 
     const [isCheckingAccess, setIsCheckingAccess] =
         useState(true);
@@ -46,6 +49,9 @@ export default function AdminUsersPage() {
 
     const [showTeacherForm, setShowTeacherForm] =
         useState(false);
+
+    const [editingTeacherId, setEditingTeacherId] =
+        useState<string | null>(null);
 
     const [teacherName, setTeacherName] =
         useState("");
@@ -136,10 +142,23 @@ export default function AdminUsersPage() {
     }, [isCheckingAccess]);
 
     // =========================================================
-    // ADD TEACHER
+    // RESET TEACHER FORM
     // =========================================================
 
-    async function handleAddTeacher(
+    function resetTeacherForm() {
+        setTeacherName("");
+        setEmployeeId("");
+        setTeacherPhone("");
+        setTeacherEmail("");
+        setEditingTeacherId(null);
+        setShowTeacherForm(false);
+    }
+
+    // =========================================================
+    // ADD / EDIT TEACHER
+    // =========================================================
+
+    async function handleSaveTeacher(
         e: React.FormEvent<HTMLFormElement>
     ) {
         e.preventDefault();
@@ -149,7 +168,76 @@ export default function AdminUsersPage() {
             return;
         }
 
+        // -----------------------------------------------------
+        // PHONE VALIDATION
+        // -----------------------------------------------------
+        // Phone number is optional.
+        // If entered, it must contain exactly 10 digits.
+        // We intentionally allow numbers starting with 5, 6, 7, 8 or 9.
+        // -----------------------------------------------------
+
+        const cleanedPhone = teacherPhone.replace(/\D/g, "");
+
+        if (
+            teacherPhone.trim() &&
+            cleanedPhone.length !== 10
+        ) {
+            alert(
+                "Phone number must contain exactly 10 digits."
+            );
+            return;
+        }
+
         setIsSaving(true);
+
+        // -----------------------------------------------------
+        // EDIT EXISTING TEACHER
+        // -----------------------------------------------------
+
+        if (editingTeacherId) {
+            const { error } = await supabase
+                .from("teachers")
+                .update({
+                    employee_id:
+                        employeeId.trim() || null,
+
+                    name: teacherName.trim(),
+
+                    phone:
+                        cleanedPhone || null,
+
+                    email:
+                        teacherEmail.trim() || null,
+                })
+                .eq("id", editingTeacherId);
+
+            setIsSaving(false);
+
+            if (error) {
+                console.error(
+                    "Could not update teacher:",
+                    error
+                );
+
+                alert(
+                    "Could not update teacher. Please try again."
+                );
+
+                return;
+            }
+
+            alert("Teacher updated successfully.");
+
+            resetTeacherForm();
+
+            await loadPeople();
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // ADD NEW TEACHER
+        // -----------------------------------------------------
 
         const {
             data: { user },
@@ -157,7 +245,15 @@ export default function AdminUsersPage() {
 
         if (!user) {
             console.error("No logged-in user found.");
+
             setIsSaving(false);
+
+            alert(
+                "Your session has expired. Please log in again."
+            );
+
+            router.replace("/login");
+
             return;
         }
 
@@ -194,11 +290,15 @@ export default function AdminUsersPage() {
                 .insert({
                     school_id:
                         membership.school_id,
+
                     employee_id:
                         employeeId.trim() || null,
+
                     name: teacherName.trim(),
+
                     phone:
-                        teacherPhone.trim() || null,
+                        cleanedPhone || null,
+
                     email:
                         teacherEmail.trim() || null,
                 });
@@ -224,23 +324,136 @@ export default function AdminUsersPage() {
             return;
         }
 
-        setTeacherName("");
-        setEmployeeId("");
-        setTeacherPhone("");
-        setTeacherEmail("");
+        alert("Teacher added successfully.");
 
-        setShowTeacherForm(false);
+        resetTeacherForm();
 
         await loadPeople();
     }
 
-    function handleCancelTeacher() {
-        setTeacherName("");
-        setEmployeeId("");
-        setTeacherPhone("");
-        setTeacherEmail("");
+    // =========================================================
+    // EDIT TEACHER
+    // =========================================================
 
-        setShowTeacherForm(false);
+    function handleEditTeacher(
+        teacher: Teacher
+    ) {
+        setEditingTeacherId(teacher.id);
+
+        setTeacherName(
+            teacher.name
+        );
+
+        setEmployeeId(
+            teacher.employee_id || ""
+        );
+
+        setTeacherPhone(
+            teacher.phone || ""
+        );
+
+        setTeacherEmail(
+            teacher.email || ""
+        );
+
+        setShowTeacherForm(true);
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    }
+
+    // =========================================================
+    // DEACTIVATE TEACHER
+    // =========================================================
+
+    async function handleDeactivateTeacher(
+        teacher: Teacher
+    ) {
+        const confirmed = window.confirm(
+            `Are you sure you want to deactivate ${teacher.name}? This will mark the teacher as inactive.`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const { error } = await supabase
+            .from("teachers")
+            .update({
+                is_active: false,
+            })
+            .eq("id", teacher.id);
+
+        if (error) {
+            console.error(
+                "Could not deactivate teacher:",
+                error
+            );
+
+            alert(
+                "Could not deactivate teacher. Please try again."
+            );
+
+            return;
+        }
+
+        alert(
+            "Teacher has been deactivated."
+        );
+
+        await loadPeople();
+    }
+
+    // =========================================================
+    // RESTORE TEACHER
+    // =========================================================
+
+    async function handleRestoreTeacher(
+        teacher: Teacher
+    ) {
+        const confirmed = window.confirm(
+            `Reactivate ${teacher.name}?`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const { error } = await supabase
+            .from("teachers")
+            .update({
+                is_active: true,
+            })
+            .eq("id", teacher.id);
+
+        if (error) {
+            console.error(
+                "Could not reactivate teacher:",
+                error
+            );
+
+            alert(
+                "Could not reactivate teacher. Please try again."
+            );
+
+            return;
+        }
+
+        alert(
+            "Teacher has been reactivated."
+        );
+
+        await loadPeople();
+    }
+
+    // =========================================================
+    // CANCEL TEACHER FORM
+    // =========================================================
+
+    function handleCancelTeacher() {
+        resetTeacherForm();
     }
 
     // =========================================================
@@ -285,6 +498,15 @@ export default function AdminUsersPage() {
                                 activeTab ===
                                 "teachers"
                             ) {
+                                setEditingTeacherId(
+                                    null
+                                );
+
+                                setTeacherName("");
+                                setEmployeeId("");
+                                setTeacherPhone("");
+                                setTeacherEmail("");
+
                                 setShowTeacherForm(
                                     true
                                 );
@@ -310,11 +532,10 @@ export default function AdminUsersPage() {
                     type="button"
                     onClick={() => {
                         setActiveTab("teachers");
-                        setShowTeacherForm(false);
+                        resetTeacherForm();
                     }}
                     className={`px-5 py-3 font-medium ${
-                        activeTab ===
-                        "teachers"
+                        activeTab === "teachers"
                             ? "border-b-2 border-emerald-600 text-emerald-700"
                             : "text-gray-500 hover:text-gray-700"
                     }`}
@@ -326,11 +547,10 @@ export default function AdminUsersPage() {
                     type="button"
                     onClick={() => {
                         setActiveTab("students");
-                        setShowTeacherForm(false);
+                        resetTeacherForm();
                     }}
                     className={`px-5 py-3 font-medium ${
-                        activeTab ===
-                        "students"
+                        activeTab === "students"
                             ? "border-b-2 border-emerald-600 text-emerald-700"
                             : "text-gray-500 hover:text-gray-700"
                     }`}
@@ -339,21 +559,25 @@ export default function AdminUsersPage() {
                 </button>
             </div>
 
-            {/* Add Teacher Form */}
+            {/* Add / Edit Teacher Form */}
             {showTeacherForm &&
                 activeTab === "teachers" && (
                     <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
                         <h2 className="text-xl font-semibold">
-                            Add Teacher
+                            {editingTeacherId
+                                ? "Edit Teacher"
+                                : "Add Teacher"}
                         </h2>
 
                         <p className="text-gray-500 mt-1">
-                            Add teacher information to your school.
+                            {editingTeacherId
+                                ? "Update teacher information."
+                                : "Add teacher information to your school."}
                         </p>
 
                         <form
                             onSubmit={
-                                handleAddTeacher
+                                handleSaveTeacher
                             }
                             className="mt-6"
                         >
@@ -426,18 +650,32 @@ export default function AdminUsersPage() {
                                     <input
                                         id="teacherPhone"
                                         type="tel"
+                                        inputMode="numeric"
+                                        maxLength={10}
                                         value={
                                             teacherPhone
                                         }
-                                        onChange={(e) =>
+                                        onChange={(e) => {
+                                            const value =
+                                                e.target.value.replace(
+                                                    /\D/g,
+                                                    ""
+                                                );
+
                                             setTeacherPhone(
-                                                e.target
-                                                    .value
-                                            )
-                                        }
+                                                value.slice(
+                                                    0,
+                                                    10
+                                                )
+                                            );
+                                        }}
                                         placeholder="e.g. 9876543210"
                                         className="w-full border rounded-md p-3"
                                     />
+
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Enter a 10-digit phone number.
+                                    </p>
                                 </div>
 
                                 {/* Email */}
@@ -486,7 +724,9 @@ export default function AdminUsersPage() {
                                 >
                                     {isSaving
                                         ? "Saving..."
-                                        : "Save Teacher"}
+                                        : editingTeacherId
+                                            ? "Update Teacher"
+                                            : "Save Teacher"}
                                 </button>
                             </div>
                         </form>
@@ -538,6 +778,10 @@ export default function AdminUsersPage() {
                                                     <th className="text-left p-4">
                                                         Status
                                                     </th>
+
+                                                    <th className="text-right p-4">
+                                                        Actions
+                                                    </th>
                                                 </tr>
                                             </thead>
 
@@ -574,9 +818,59 @@ export default function AdminUsersPage() {
                                                             </td>
 
                                                             <td className="p-4">
-                                                                {teacher.is_active
-                                                                    ? "Active"
-                                                                    : "Inactive"}
+                                                                <span
+                                                                    className={
+                                                                        teacher.is_active
+                                                                            ? "text-emerald-700"
+                                                                            : "text-gray-500"
+                                                                    }
+                                                                >
+                                                                    {teacher.is_active
+                                                                        ? "Active"
+                                                                        : "Inactive"}
+                                                                </span>
+                                                            </td>
+
+                                                            <td className="p-4">
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleEditTeacher(
+                                                                                teacher
+                                                                            )
+                                                                        }
+                                                                        className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+
+                                                                    {teacher.is_active ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleDeactivateTeacher(
+                                                                                    teacher
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition"
+                                                                        >
+                                                                            Deactivate
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleRestoreTeacher(
+                                                                                    teacher
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition"
+                                                                        >
+                                                                            Activate
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     )
@@ -647,24 +941,18 @@ export default function AdminUsersPage() {
                                                             </td>
 
                                                             <td className="p-4">
-                                                                {
-                                                                    student.student_phone ||
-                                                                    "-"
-                                                                }
+                                                                {student.student_phone ||
+                                                                    "-"}
                                                             </td>
 
                                                             <td className="p-4">
-                                                                {
-                                                                    student.parent_name ||
-                                                                    "-"
-                                                                }
+                                                                {student.parent_name ||
+                                                                    "-"}
                                                             </td>
 
                                                             <td className="p-4">
-                                                                {
-                                                                    student.parent_phone ||
-                                                                    "-"
-                                                                }
+                                                                {student.parent_phone ||
+                                                                    "-"}
                                                             </td>
 
                                                             <td className="p-4">

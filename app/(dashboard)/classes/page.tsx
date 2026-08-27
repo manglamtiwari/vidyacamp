@@ -28,13 +28,15 @@ type SectionItem = {
 };
 
 export default function ClassesPage() {
-      const router = useRouter();
+    const router = useRouter();
+
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [sections, setSections] = useState<SectionItem[]>([]);
     const [currentYear, setCurrentYear] =
         useState<AcademicYear | null>(null);
-        const [isAuthorized, setIsAuthorized] = useState(false);
-const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSavingClass, setIsSavingClass] = useState(false);
@@ -59,49 +61,56 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
     const [errorMessage, setErrorMessage] = useState("");
 
+    // =========================================================
+    // ACCESS CHECK
+    // =========================================================
 
     async function checkAdminAccess() {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
-    if (!user) {
+        if (!user) {
+            router.replace("/login");
+            return false;
+        }
+
+        const { data: membership, error } = await supabase
+            .from("school_users")
+            .select("role")
+            .eq("user_id", user.id)
+            .eq("status", "active")
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Could not check user role:", error);
+            router.replace("/login");
+            return false;
+        }
+
+        if (membership?.role === "admin") {
+            setIsAuthorized(true);
+            return true;
+        }
+
+        if (membership?.role === "teacher") {
+            router.replace("/teacher/dashboard");
+            return false;
+        }
+
+        if (membership?.role === "student") {
+            router.replace("/student/dashboard");
+            return false;
+        }
+
         router.replace("/login");
         return false;
     }
 
-    const { data: membership, error } = await supabase
-        .from("school_users")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
-
-    if (error) {
-        console.error("Could not check user role:", error);
-        router.replace("/login");
-        return false;
-    }
-
-    if (membership?.role === "admin") {
-        setIsAuthorized(true);
-        return true;
-    }
-
-    if (membership?.role === "teacher") {
-        router.replace("/teacher/dashboard");
-        return false;
-    }
-
-    if (membership?.role === "student") {
-        router.replace("/student/dashboard");
-        return false;
-    }
-
-    router.replace("/login");
-    return false;
-}
+    // =========================================================
+    // GET ADMIN SCHOOL
+    // =========================================================
 
     async function getAdminSchoolId() {
         const {
@@ -133,6 +142,10 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
         return membership.school_id;
     }
+
+    // =========================================================
+    // LOAD CLASSES
+    // =========================================================
 
     async function loadClasses() {
         setIsLoading(true);
@@ -169,7 +182,7 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
             setCurrentYear(year);
 
-            // Load classes for current academic year
+            // Load ACTIVE classes for current academic year
             const { data: classData, error: classesError } =
                 await supabase
                     .from("classes")
@@ -186,7 +199,7 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                 throw classesError;
             }
 
-            // Load sections belonging to the loaded classes
+            // Load sections belonging to active classes
             const classIds =
                 (classData || []).map((item) => item.id);
 
@@ -228,33 +241,37 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
         }
     }
 
-  useEffect(() => {
-    let isMounted = true;
+    // =========================================================
+    // INITIALIZE PAGE
+    // =========================================================
 
-    async function initializePage() {
-        setIsCheckingAccess(true);
+    useEffect(() => {
+        let isMounted = true;
 
-        const allowed = await checkAdminAccess();
+        async function initializePage() {
+            setIsCheckingAccess(true);
 
-        if (!isMounted) {
-            return;
+            const allowed = await checkAdminAccess();
+
+            if (!isMounted) {
+                return;
+            }
+
+            setIsCheckingAccess(false);
+
+            if (allowed) {
+                await loadClasses();
+            } else {
+                setIsLoading(false);
+            }
         }
 
-        setIsCheckingAccess(false);
+        initializePage();
 
-        if (allowed) {
-            await loadClasses();
-        } else {
-            setIsLoading(false);
-        }
-    }
-
-    initializePage();
-
-    return () => {
-        isMounted = false;
-    };
-}, []);
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     // =========================================================
     // ADD CLASS
@@ -301,50 +318,125 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                 return;
             }
 
-            const alreadyExists = classes.some(
+            /*
+             * IMPORTANT:
+             *
+             * Load ALL classes for this academic year,
+             * including soft-deleted classes.
+             *
+             * This allows us to reactivate a class instead
+             * of creating a duplicate database row.
+             */
+            const {
+                data: existingClasses,
+                error: existingClassesError,
+            } = await supabase
+                .from("classes")
+                .select(
+                    "id, school_id, academic_year_id, name, display_order, is_active"
+                )
+                .eq("school_id", schoolId)
+                .eq("academic_year_id", year.id);
+
+            if (existingClassesError) {
+                throw existingClassesError;
+            }
+
+            /*
+             * Find a class with the same name,
+             * ignoring upper/lower case.
+             */
+            const matchingClass = (
+                existingClasses || []
+            ).find(
                 (item) =>
                     item.name.trim().toLowerCase() ===
                     trimmedName.toLowerCase()
             );
 
-            if (alreadyExists) {
+            /*
+             * Class already exists and is active.
+             */
+            if (matchingClass?.is_active) {
                 setErrorMessage(
                     "A class with this name already exists in the current academic year."
                 );
                 return;
             }
 
+            /*
+             * Class existed before but was soft-deleted.
+             *
+             * Reactivate the existing database row.
+             */
+            if (
+                matchingClass &&
+                !matchingClass.is_active
+            ) {
+                const { error: reactivateError } =
+                    await supabase
+                        .from("classes")
+                        .update({
+                            is_active: true,
+                        })
+                        .eq("id", matchingClass.id);
+
+                if (reactivateError) {
+                    throw reactivateError;
+                }
+
+                setClassName("");
+                setShowClassForm(false);
+
+                await loadClasses();
+
+                return;
+            }
+
+            /*
+             * Completely new class.
+             *
+             * Calculate the next display order using
+             * active classes only.
+             */
+            const activeClasses = (
+                existingClasses || []
+            ).filter(
+                (item) => item.is_active
+            );
+
             const nextDisplayOrder =
-                classes.length > 0
+                activeClasses.length > 0
                     ? Math.max(
-                          ...classes.map(
+                          ...activeClasses.map(
                               (item) =>
                                   item.display_order || 0
                           )
                       ) + 1
                     : 1;
 
-            const { error } = await supabase
-                .from("classes")
-                .insert({
-                    school_id: schoolId,
-                    academic_year_id: year.id,
-                    name: trimmedName,
-                    display_order: nextDisplayOrder,
-                    is_active: true,
-                });
+            /*
+             * Create completely new class.
+             */
+            const { error: insertError } =
+                await supabase
+                    .from("classes")
+                    .insert({
+                        school_id: schoolId,
+                        academic_year_id: year.id,
+                        name: trimmedName,
+                        display_order:
+                            nextDisplayOrder,
+                        is_active: true,
+                    });
 
-            if (error) {
+            if (insertError) {
                 console.error(
                     "Could not create class:",
-                    error
+                    insertError
                 );
 
-                setErrorMessage(
-                    "Could not create class. Please try again."
-                );
-
-                return;
+                throw insertError;
             }
 
             setClassName("");
@@ -353,7 +445,7 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
             await loadClasses();
         } catch (error) {
             console.error(
-                "Could not create class:",
+                "Could not create/reactivate class:",
                 error
             );
 
@@ -375,7 +467,9 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     // EDIT CLASS
     // =========================================================
 
-    function startEditingClass(classItem: ClassItem) {
+    function startEditingClass(
+        classItem: ClassItem
+    ) {
         setEditingClassId(classItem.id);
         setEditingClassName(classItem.name);
         setErrorMessage("");
@@ -393,7 +487,8 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     ) {
         e.preventDefault();
 
-        const trimmedName = editingClassName.trim();
+        const trimmedName =
+            editingClassName.trim();
 
         if (!trimmedName) {
             setErrorMessage(
@@ -494,7 +589,9 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     // ADD SECTION
     // =========================================================
 
-    function startAddingSection(classId: string) {
+    function startAddingSection(
+        classId: string
+    ) {
         setAddingSectionTo(classId);
         setSectionName("");
         setErrorMessage("");
@@ -507,56 +604,66 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     }
 
     async function handleAddSection(
-    e: React.FormEvent<HTMLFormElement>,
-    classId: string
-) {
-    e.preventDefault();
+        e: React.FormEvent<HTMLFormElement>,
+        classId: string
+    ) {
+        e.preventDefault();
 
-    const trimmedName = sectionName.trim();
+        const trimmedName = sectionName.trim();
 
-    if (!trimmedName) {
-        setErrorMessage("Section name cannot be empty.");
-        return;
-    }
+        if (!trimmedName) {
+            setErrorMessage(
+                "Section name cannot be empty."
+            );
+            return;
+        }
 
-    setIsSavingSection(true);
-    setErrorMessage("");
+        setIsSavingSection(true);
+        setErrorMessage("");
 
-    try {
-        const schoolId = await getAdminSchoolId();
+        try {
+            const schoolId =
+                await getAdminSchoolId();
 
-        // Make sure the class belongs to the current academic year
-        const { data: classRecord, error: classError } =
-            await supabase
+            // Make sure the class belongs to the current academic year
+            const {
+                data: classRecord,
+                error: classError,
+            } = await supabase
                 .from("classes")
-                .select("id, academic_year_id")
+                .select(
+                    "id, academic_year_id"
+                )
                 .eq("id", classId)
                 .eq("school_id", schoolId)
                 .eq("is_active", true)
                 .maybeSingle();
 
-        if (classError) {
-            throw classError;
-        }
+            if (classError) {
+                throw classError;
+            }
 
-        if (
-            !classRecord ||
-            !currentYear ||
-            classRecord.academic_year_id !== currentYear.id
-        ) {
-            setErrorMessage(
-                "This class does not belong to the current academic year."
-            );
-            return;
-        }
+            if (
+                !classRecord ||
+                !currentYear ||
+                classRecord.academic_year_id !==
+                    currentYear.id
+            ) {
+                setErrorMessage(
+                    "This class does not belong to the current academic year."
+                );
+                return;
+            }
 
-        /*
-         * IMPORTANT:
-         * Load ALL sections for this class, including
-         * soft-deleted sections.
-         */
-        const { data: existingSections, error: sectionsError } =
-            await supabase
+            /*
+             * IMPORTANT:
+             * Load ALL sections for this class,
+             * including soft-deleted sections.
+             */
+            const {
+                data: existingSections,
+                error: sectionsError,
+            } = await supabase
                 .from("sections")
                 .select(
                     "id, class_id, name, display_order, is_active"
@@ -564,100 +671,117 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                 .eq("school_id", schoolId)
                 .eq("class_id", classId);
 
-        if (sectionsError) {
-            throw sectionsError;
-        }
+            if (sectionsError) {
+                throw sectionsError;
+            }
 
-        const matchingSection = (existingSections || []).find(
-            (section) =>
-                section.name.trim().toLowerCase() ===
-                trimmedName.toLowerCase()
-        );
-
-        /*
-         * Section already exists and is active.
-         */
-        if (matchingSection?.is_active) {
-            setErrorMessage(
-                "This section already exists in this class."
+            const matchingSection = (
+                existingSections || []
+            ).find(
+                (section) =>
+                    section.name
+                        .trim()
+                        .toLowerCase() ===
+                    trimmedName.toLowerCase()
             );
-            return;
-        }
 
-        /*
-         * Section existed before but was soft-deleted.
-         * Reactivate the existing record instead of
-         * creating a duplicate.
-         */
-        if (matchingSection && !matchingSection.is_active) {
-            const { error: reactivateError } =
-                await supabase
+            /*
+             * Section already exists and is active.
+             */
+            if (matchingSection?.is_active) {
+                setErrorMessage(
+                    "This section already exists in this class."
+                );
+                return;
+            }
+
+            /*
+             * Section existed before but was soft-deleted.
+             * Reactivate the existing record.
+             */
+            if (
+                matchingSection &&
+                !matchingSection.is_active
+            ) {
+                const {
+                    error: reactivateError,
+                } = await supabase
                     .from("sections")
                     .update({
                         is_active: true,
                     })
-                    .eq("id", matchingSection.id);
+                    .eq(
+                        "id",
+                        matchingSection.id
+                    );
 
-            if (reactivateError) {
-                throw reactivateError;
+                if (reactivateError) {
+                    throw reactivateError;
+                }
+
+                setSectionName("");
+                setAddingSectionTo(null);
+
+                await loadClasses();
+
+                return;
+            }
+
+            /*
+             * Completely new section.
+             */
+            const activeSections = (
+                existingSections || []
+            ).filter(
+                (section) =>
+                    section.is_active
+            );
+
+            const nextDisplayOrder =
+                activeSections.length > 0
+                    ? Math.max(
+                          ...activeSections.map(
+                              (section) =>
+                                  section.display_order ||
+                                  0
+                          )
+                      ) + 1
+                    : 1;
+
+            const {
+                error: insertError,
+            } = await supabase
+                .from("sections")
+                .insert({
+                    school_id: schoolId,
+                    class_id: classId,
+                    name: trimmedName,
+                    display_order:
+                        nextDisplayOrder,
+                    is_active: true,
+                });
+
+            if (insertError) {
+                throw insertError;
             }
 
             setSectionName("");
             setAddingSectionTo(null);
 
             await loadClasses();
-            return;
+        } catch (error) {
+            console.error(
+                "Could not create/reactivate section:",
+                error
+            );
+
+            setErrorMessage(
+                "Could not create section. Please try again."
+            );
+        } finally {
+            setIsSavingSection(false);
         }
-
-        /*
-         * Completely new section.
-         */
-        const activeSections = (
-            existingSections || []
-        ).filter((section) => section.is_active);
-
-        const nextDisplayOrder =
-            activeSections.length > 0
-                ? Math.max(
-                      ...activeSections.map(
-                          (section) =>
-                              section.display_order || 0
-                      )
-                  ) + 1
-                : 1;
-
-        const { error: insertError } =
-            await supabase
-                .from("sections")
-                .insert({
-                    school_id: schoolId,
-                    class_id: classId,
-                    name: trimmedName,
-                    display_order: nextDisplayOrder,
-                    is_active: true,
-                });
-
-        if (insertError) {
-            throw insertError;
-        }
-
-        setSectionName("");
-        setAddingSectionTo(null);
-
-        await loadClasses();
-    } catch (error) {
-        console.error(
-            "Could not create/reactivate section:",
-            error
-        );
-
-        setErrorMessage(
-            "Could not create section. Please try again."
-        );
-    } finally {
-        setIsSavingSection(false);
     }
-}
 
     // =========================================================
     // EDIT SECTION
@@ -702,7 +826,9 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                     item.id !== section.id &&
                     item.class_id ===
                         section.class_id &&
-                    item.name.trim().toLowerCase() ===
+                    item.name
+                        .trim()
+                        .toLowerCase() ===
                         trimmedName.toLowerCase()
             );
 
@@ -783,29 +909,45 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
         }
     }
 
+    // =========================================================
+    // GET SECTIONS FOR CLASS
+    // =========================================================
+
     function getSectionsForClass(
         classId: string
     ) {
         return sections.filter(
             (section) =>
-                section.class_id === classId &&
+                section.class_id ===
+                    classId &&
                 section.is_active
         );
     }
 
-    if (isCheckingAccess || !isAuthorized) {
-    return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+    // =========================================================
+    // ACCESS LOADING
+    // =========================================================
 
-                <p className="text-gray-500 mt-4">
-                    Checking access...
-                </p>
+    if (
+        isCheckingAccess ||
+        !isAuthorized
+    ) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+
+                    <p className="text-gray-500 mt-4">
+                        Checking access...
+                    </p>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
+
+    // =========================================================
+    // PAGE
+    // =========================================================
 
     return (
         <div>
@@ -840,7 +982,9 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                             type="button"
                             onClick={() => {
                                 setErrorMessage("");
-                                setShowClassForm(true);
+                                setShowClassForm(
+                                    true
+                                );
                             }}
                             className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition"
                         >
@@ -961,173 +1105,58 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                 )
             ) : (
                 <div className="space-y-5">
-                    {classes.map((classItem) => {
-                        const classSections =
-                            getSectionsForClass(
-                                classItem.id
-                            );
+                    {classes.map(
+                        (classItem) => {
+                            const classSections =
+                                getSectionsForClass(
+                                    classItem.id
+                                );
 
-                        return (
-                            <div
-                                key={classItem.id}
-                                className="bg-white rounded-xl shadow-sm p-6"
-                            >
-                                {/* Class Header */}
-                                {editingClassId ===
-                                classItem.id ? (
-                                    <form
-                                        onSubmit={(e) =>
-                                            handleUpdateClass(
-                                                e,
-                                                classItem.id
-                                            )
-                                        }
-                                        className="flex items-center gap-3"
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                editingClassName
-                                            }
-                                            onChange={(e) =>
-                                                setEditingClassName(
-                                                    e.target
-                                                        .value
+                            return (
+                                <div
+                                    key={
+                                        classItem.id
+                                    }
+                                    className="bg-white rounded-xl shadow-sm p-6"
+                                >
+                                    {/* Class Header */}
+                                    {editingClassId ===
+                                    classItem.id ? (
+                                        <form
+                                            onSubmit={(
+                                                e
+                                            ) =>
+                                                handleUpdateClass(
+                                                    e,
+                                                    classItem.id
                                                 )
                                             }
-                                            autoFocus
-                                            className="flex-1 border rounded-md p-3"
-                                        />
-
-                                        <button
-                                            type="button"
-                                            onClick={
-                                                cancelEditingClass
-                                            }
-                                            className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+                                            className="flex items-center gap-3"
                                         >
-                                            Cancel
-                                        </button>
-
-                                        <button
-                                            type="submit"
-                                            disabled={
-                                                isSavingClass
-                                            }
-                                            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                                        >
-                                            {isSavingClass
-                                                ? "Saving..."
-                                                : "Save"}
-                                        </button>
-                                    </form>
-                                ) : (
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-800">
-                                                {
-                                                    classItem.name
-                                                }
-                                            </h2>
-
-                                            <p className="text-gray-500 mt-1">
-                                                {
-                                                    classSections.length
-                                                }{" "}
-                                                {classSections.length ===
-                                                1
-                                                    ? "section"
-                                                    : "sections"}
-                                            </p>
-                                        </div>
-
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    startEditingClass(
-                                                        classItem
-                                                    )
-                                                }
-                                                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
-                                            >
-                                                Edit
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    handleDeleteClass(
-                                                        classItem
-                                                    )
-                                                }
-                                                className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
-                                            >
-                                                Delete
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    startAddingSection(
-                                                        classItem.id
-                                                    )
-                                                }
-                                                className="border border-emerald-600 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition"
-                                            >
-                                                + Add Section
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Add Section */}
-                                {addingSectionTo ===
-                                    classItem.id && (
-                                    <form
-                                        onSubmit={(e) =>
-                                            handleAddSection(
-                                                e,
-                                                classItem.id
-                                            )
-                                        }
-                                        className="mt-5 p-4 bg-emerald-50 rounded-lg"
-                                    >
-                                        <label
-                                            htmlFor={`section-${classItem.id}`}
-                                            className="block text-sm font-medium mb-2"
-                                        >
-                                            Section Name{" "}
-                                            <span className="text-red-500">
-                                                *
-                                            </span>
-                                        </label>
-
-                                        <div className="flex gap-3">
                                             <input
-                                                id={`section-${classItem.id}`}
                                                 type="text"
                                                 value={
-                                                    sectionName
+                                                    editingClassName
                                                 }
-                                                onChange={(e) =>
-                                                    setSectionName(
-                                                        e.target
+                                                onChange={(
+                                                    e
+                                                ) =>
+                                                    setEditingClassName(
+                                                        e
+                                                            .target
                                                             .value
                                                     )
                                                 }
-                                                placeholder="e.g. A"
-                                                required
                                                 autoFocus
-                                                className="flex-1 border rounded-md p-3 bg-white"
+                                                className="flex-1 border rounded-md p-3"
                                             />
 
                                             <button
                                                 type="button"
                                                 onClick={
-                                                    cancelAddingSection
+                                                    cancelEditingClass
                                                 }
-                                                className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                                                className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                             >
                                                 Cancel
                                             </button>
@@ -1135,134 +1164,267 @@ const [isCheckingAccess, setIsCheckingAccess] = useState(true);
                                             <button
                                                 type="submit"
                                                 disabled={
-                                                    isSavingSection
+                                                    isSavingClass
                                                 }
                                                 className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                                             >
-                                                {isSavingSection
+                                                {isSavingClass
                                                     ? "Saving..."
                                                     : "Save"}
                                             </button>
-                                        </div>
-                                    </form>
-                                )}
-
-                                {/* Sections */}
-                                {classSections.length > 0 && (
-                                    <div className="mt-5 space-y-2">
-                                        {classSections.map(
-                                            (section) => (
-                                                <div
-                                                    key={
-                                                        section.id
+                                        </form>
+                                    ) : (
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h2 className="text-xl font-semibold text-gray-800">
+                                                    {
+                                                        classItem.name
                                                     }
-                                                    className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3"
+                                                </h2>
+
+                                                <p className="text-gray-500 mt-1">
+                                                    {
+                                                        classSections.length
+                                                    }{" "}
+                                                    {classSections.length ===
+                                                    1
+                                                        ? "section"
+                                                        : "sections"}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        startEditingClass(
+                                                            classItem
+                                                        )
+                                                    }
+                                                    className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                 >
-                                                    {editingSectionId ===
-                                                    section.id ? (
-                                                        <form
-                                                            onSubmit={(
-                                                                e
-                                                            ) =>
-                                                                handleUpdateSection(
-                                                                    e,
-                                                                    section
-                                                                )
-                                                            }
-                                                            className="flex items-center gap-3 w-full"
-                                                        >
-                                                            <input
-                                                                type="text"
-                                                                value={
-                                                                    editingSectionName
-                                                                }
-                                                                onChange={(
+                                                    Edit
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleDeleteClass(
+                                                            classItem
+                                                        )
+                                                    }
+                                                    className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                                                >
+                                                    Delete
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        startAddingSection(
+                                                            classItem.id
+                                                        )
+                                                    }
+                                                    className="border border-emerald-600 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-50 transition"
+                                                >
+                                                    + Add Section
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Add Section */}
+                                    {addingSectionTo ===
+                                        classItem.id && (
+                                        <form
+                                            onSubmit={(
+                                                e
+                                            ) =>
+                                                handleAddSection(
+                                                    e,
+                                                    classItem.id
+                                                )
+                                            }
+                                            className="mt-5 p-4 bg-emerald-50 rounded-lg"
+                                        >
+                                            <label
+                                                htmlFor={`section-${classItem.id}`}
+                                                className="block text-sm font-medium mb-2"
+                                            >
+                                                Section Name{" "}
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </label>
+
+                                            <div className="flex gap-3">
+                                                <input
+                                                    id={`section-${classItem.id}`}
+                                                    type="text"
+                                                    value={
+                                                        sectionName
+                                                    }
+                                                    onChange={(
+                                                        e
+                                                    ) =>
+                                                        setSectionName(
+                                                            e
+                                                                .target
+                                                                .value
+                                                        )
+                                                    }
+                                                    placeholder="e.g. A"
+                                                    required
+                                                    autoFocus
+                                                    className="flex-1 border rounded-md p-3 bg-white"
+                                                />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={
+                                                        cancelAddingSection
+                                                    }
+                                                    className="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                                                >
+                                                    Cancel
+                                                </button>
+
+                                                <button
+                                                    type="submit"
+                                                    disabled={
+                                                        isSavingSection
+                                                    }
+                                                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                                                >
+                                                    {isSavingSection
+                                                        ? "Saving..."
+                                                        : "Save"}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {/* Sections */}
+                                    {classSections.length >
+                                        0 && (
+                                        <div className="mt-5 space-y-2">
+                                            {classSections.map(
+                                                (
+                                                    section
+                                                ) => (
+                                                    <div
+                                                        key={
+                                                            section.id
+                                                        }
+                                                        className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-3"
+                                                    >
+                                                        {editingSectionId ===
+                                                        section.id ? (
+                                                            <form
+                                                                onSubmit={(
                                                                     e
                                                                 ) =>
-                                                                    setEditingSectionName(
-                                                                        e
-                                                                            .target
-                                                                            .value
+                                                                    handleUpdateSection(
+                                                                        e,
+                                                                        section
                                                                     )
                                                                 }
-                                                                autoFocus
-                                                                className="flex-1 border rounded-md p-2 bg-white"
-                                                            />
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={
-                                                                    cancelEditingSection
-                                                                }
-                                                                className="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+                                                                className="flex items-center gap-3 w-full"
                                                             >
-                                                                Cancel
-                                                            </button>
-
-                                                            <button
-                                                                type="submit"
-                                                                disabled={
-                                                                    isSavingSection
-                                                                }
-                                                                className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                                                            >
-                                                                {isSavingSection
-                                                                    ? "Saving..."
-                                                                    : "Save"}
-                                                            </button>
-                                                        </form>
-                                                    ) : (
-                                                        <>
-                                                            <span className="font-medium text-emerald-800">
-                                                                Section{" "}
-                                                                {
-                                                                    section.name
-                                                                }
-                                                            </span>
-
-                                                            <div className="flex items-center gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        startEditingSection(
-                                                                            section
+                                                                <input
+                                                                    type="text"
+                                                                    value={
+                                                                        editingSectionName
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        setEditingSectionName(
+                                                                            e
+                                                                                .target
+                                                                                .value
                                                                         )
                                                                     }
-                                                                    className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-sm"
-                                                                >
-                                                                    Edit
-                                                                </button>
+                                                                    autoFocus
+                                                                    className="flex-1 border rounded-md p-2 bg-white"
+                                                                />
 
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() =>
-                                                                        handleDeleteSection(
-                                                                            section
-                                                                        )
+                                                                    onClick={
+                                                                        cancelEditingSection
                                                                     }
-                                                                    className="px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 text-sm"
+                                                                    className="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
                                                                 >
-                                                                    Delete
+                                                                    Cancel
                                                                 </button>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-                                )}
 
-                                {classSections.length === 0 &&
-                                    addingSectionTo !==
-                                        classItem.id && (
-                                        <p className="text-gray-400 mt-5">
-                                            No sections yet.
-                                        </p>
+                                                                <button
+                                                                    type="submit"
+                                                                    disabled={
+                                                                        isSavingSection
+                                                                    }
+                                                                    className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                                                                >
+                                                                    {isSavingSection
+                                                                        ? "Saving..."
+                                                                        : "Save"}
+                                                                </button>
+                                                            </form>
+                                                        ) : (
+                                                            <>
+                                                                <span className="font-medium text-emerald-800">
+                                                                    Section{" "}
+                                                                    {
+                                                                        section.name
+                                                                    }
+                                                                </span>
+
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            startEditingSection(
+                                                                                section
+                                                                            )
+                                                                        }
+                                                                        className="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-sm"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleDeleteSection(
+                                                                                section
+                                                                            )
+                                                                        }
+                                                                        className="px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-600 hover:bg-red-50 text-sm"
+                                                                    >
+                                                                        Delete
+                                                                    </button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
                                     )}
-                            </div>
-                        );
-                    })}
+
+                                    {classSections.length ===
+                                        0 &&
+                                        addingSectionTo !==
+                                            classItem.id && (
+                                            <p className="text-gray-400 mt-5">
+                                                No sections yet.
+                                            </p>
+                                        )}
+                                </div>
+                            );
+                        }
+                    )}
                 </div>
             )}
         </div>
