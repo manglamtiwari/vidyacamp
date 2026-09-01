@@ -3,6 +3,7 @@
 import {
     LayoutDashboard,
     Users,
+    UserPlus,
     BookOpen,
     Megaphone,
     CalendarDays,
@@ -163,6 +164,17 @@ export default function Sidebar() {
                     >
                         <Users size={20} />
                         People
+                    </Link>
+                )}
+
+                {/* Bulk Add Students - ADMIN ONLY */}
+                {userRole === "admin" && (
+                    <Link
+                        href="/admin/bulk-students"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-50"
+                    >
+                        <UserPlus size={20} />
+                        Bulk Add Students
                     </Link>
                 )}
 
