@@ -1,24 +1,118 @@
-// lib/validations.ts
+// =========================================================
+// EMAIL VALIDATION
+// =========================================================
+// Checks whether an email address follows a basic valid
+// email format.
+//
+// Email fields are optional. A blank value is therefore
+// considered valid. If an email is provided, it must follow
+// the expected email format.
 
-// -----------------------------
-// Phone Number Validation
-// -----------------------------
+export function isValidEmail(
+    value: string
+): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        value.trim()
+    );
+}
 
-export function validatePhone(
-    phone: string,
-    fieldName = "Phone number"
+
+// =========================================================
+// EMAIL VALIDATION WITH ERROR MESSAGE
+// =========================================================
+// Used by forms where we want to show the user a specific
+// validation message.
+//
+// Returns:
+// - null when the email is empty or valid
+// - an error message when the email is invalid
+
+export function validateEmail(
+    value: string,
+    fieldName = "Email"
 ): string | null {
-    const value = phone.trim();
+    const email = value.trim();
 
-    // Phone is optional
-    if (!value) {
+    // Email is optional.
+    if (!email) {
         return null;
     }
 
-    // Indian phone number:
-    // Exactly 10 digits
-    // First digit must be 5, 6, 7, 8 or 9
-    if (!/^[5-9]\d{9}$/.test(value)) {
+    if (!isValidEmail(email)) {
+        return `${fieldName} must be a valid email address.`;
+    }
+
+    return null;
+}
+
+
+// =========================================================
+// PHONE NUMBER CLEANING
+// =========================================================
+// Removes spaces, dashes, brackets, and other non-numeric
+// characters from a phone number.
+//
+// IMPORTANT:
+// The number is NOT truncated.
+//
+// For example:
+// 987654321789 remains 987654321789
+//
+// This allows validation to correctly detect numbers that
+// contain more than 10 digits.
+
+export function cleanPhone(
+    value: string
+): string {
+    return value.replace(/\D/g, "");
+}
+
+
+// =========================================================
+// PHONE NUMBER VALIDATION
+// =========================================================
+// Checks whether a phone number contains exactly 10 digits.
+//
+// The application allows numbers beginning with 5, 6, 7,
+// 8, or 9.
+//
+// Examples:
+// 9876543210 → valid
+// 5123456789 → valid
+// 987654321  → invalid
+// 987654321789 → invalid
+
+export function isValidPhone(
+    value: string
+): boolean {
+    return /^[5-9]\d{9}$/.test(
+        cleanPhone(value)
+    );
+}
+
+
+// =========================================================
+// PHONE VALIDATION WITH ERROR MESSAGE
+// =========================================================
+// Used by forms where we want to show the user a specific
+// validation message.
+//
+// Returns:
+// - null when the phone number is empty or valid
+// - an error message when the phone number is invalid
+
+export function validatePhone(
+    value: string,
+    fieldName = "Phone number"
+): string | null {
+    const phone = value.trim();
+
+    // Phone number is optional.
+    if (!phone) {
+        return null;
+    }
+
+    if (!isValidPhone(phone)) {
         return `${fieldName} must be a valid 10-digit phone number.`;
     }
 
@@ -26,24 +120,114 @@ export function validatePhone(
 }
 
 
-// -----------------------------
-// Email Validation
-// -----------------------------
+// =========================================================
+// DATE OF BIRTH VALIDATION & CONVERSION
+// =========================================================
+// Accepts dates in the application's user-facing format:
+//
+// DD-MM-YYYY
+//
+// Example:
+// 15-05-2012
+//
+// After validation, the date is converted to:
+//
+// YYYY-MM-DD
+//
+// This is the format expected by PostgreSQL/Supabase
+// for a DATE column.
 
-export function validateEmail(
-    email: string,
-    fieldName = "Email"
+export function parseDateOfBirth(
+    value: string
 ): string | null {
-    const value = email.trim();
+    const dob = value.trim();
 
-    // Email is optional
-    if (!value) {
+    // Date of Birth is optional.
+    if (!dob) {
         return null;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        return `${fieldName} must be a valid email address.`;
+    // Expected input format: DD-MM-YYYY
+    const match =
+        /^(\d{2})-(\d{2})-(\d{4})$/.exec(
+            dob
+        );
+
+    if (!match) {
+        return null;
     }
 
-    return null;
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+
+    // Create the date and compare each part.
+    // This rejects invalid dates such as:
+    // 31-02-2012
+    // 32-01-2012
+    // 15-13-2012
+
+    const date = new Date(
+        year,
+        month - 1,
+        day
+    );
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    // Convert DD-MM-YYYY to YYYY-MM-DD
+    // for Supabase/PostgreSQL.
+
+    return `${year
+        .toString()
+        .padStart(4, "0")}-${month
+        .toString()
+        .padStart(2, "0")}-${day
+        .toString()
+        .padStart(2, "0")}`;
+}
+
+
+// =========================================================
+// GENDER VALIDATION
+// =========================================================
+// Allows only the gender values supported by the
+// application:
+//
+// Male
+// Female
+// Other
+//
+// Validation is case-insensitive.
+
+export function isValidGender(
+    value: string
+): boolean {
+    return [
+        "male",
+        "female",
+        "other",
+    ].includes(
+        value.trim().toLowerCase()
+    );
+}
+
+
+// =========================================================
+// REQUIRED FIELD VALIDATION
+// =========================================================
+// Checks whether a required text field contains a value.
+//
+// Whitespace-only input is considered empty.
+
+export function isRequired(
+    value: string
+): boolean {
+    return value.trim() !== "";
 }

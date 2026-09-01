@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import {
+    isValidEmail,
+    cleanPhone,
+    isValidPhone,
+    parseDateOfBirth,
+    isValidGender,
+    isRequired,
+} from "@/lib/validations";
 import { getUserRole } from "@/lib/getUserRole";
 
 type SchoolClass = {
@@ -413,68 +421,6 @@ export default function BulkStudentsPage() {
     }
 
     // =========================================================
-    // VALIDATE EMAIL
-    // =========================================================
-
-    function isValidEmail(
-        value: string
-    ) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-            value
-        );
-    }
-
-    // =========================================================
-    // PHONE CLEANING
-    // =========================================================
-
-    function cleanPhone(
-        value: string
-    ) {
-        return value
-            .replace(/\D/g, "");
-    }
-
-    // =========================================================
-    // DATE OF BIRTH
-    // =========================================================
-
-    function parseDateOfBirth(value: string) {
-        const dob = value.trim();
-
-        if (!dob) {
-            return null;
-        }
-
-        // Expected CSV format: DD-MM-YYYY
-        const match = /^(\d{2})-(\d{2})-(\d{4})$/.exec(dob);
-
-        if (!match) {
-            return null;
-        }
-
-        const day = Number(match[1]);
-        const month = Number(match[2]);
-        const year = Number(match[3]);
-
-        // Validate that the date actually exists.
-        const date = new Date(year, month - 1, day);
-
-        if (
-            date.getFullYear() !== year ||
-            date.getMonth() !== month - 1 ||
-            date.getDate() !== day
-        ) {
-            return null;
-        }
-
-        // Supabase/PostgreSQL date format.
-        return `${year.toString().padStart(4, "0")}-${month
-            .toString()
-            .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
-    }
-
-    // =========================================================
     // PROCESS CSV
     // =========================================================
 
@@ -694,13 +640,13 @@ export default function BulkStudentsPage() {
                 const errors: string[] =
                     [];
 
-                if (!admission) {
+                if (!isRequired(admission)) {
                     errors.push(
                         "Admission No. is required"
                     );
                 }
 
-                if (!name) {
+                if (!isRequired(name)) {
                     errors.push(
                         "Student Name is required"
                     );
@@ -719,8 +665,7 @@ export default function BulkStudentsPage() {
 
                 if (
                     studentPhone &&
-                    studentPhone.length !==
-                        10
+                    !isValidPhone(studentPhone)
                 ) {
                     errors.push(
                         "Student Phone must contain exactly 10 digits"
@@ -729,8 +674,7 @@ export default function BulkStudentsPage() {
 
                 if (
                     parentPhone &&
-                    parentPhone.length !==
-                        10
+                    !isValidPhone(parentPhone)
                 ) {
                     errors.push(
                         "Parent Phone must contain exactly 10 digits"
@@ -762,13 +706,7 @@ export default function BulkStudentsPage() {
 
                 if (
                     gender &&
-                    ![
-                        "male",
-                        "female",
-                        "other",
-                    ].includes(
-                        gender.toLowerCase()
-                    )
+                    !isValidGender(gender)
                 ) {
                     errors.push(
                         "Gender must be Male, Female or Other"
