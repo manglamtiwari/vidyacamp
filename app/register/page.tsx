@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import type { SyntheticEvent } from "react";
+import { isValidEmail, isValidPassword } from "../../lib/validations";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -28,21 +29,37 @@ export default function RegisterPage() {
             setSchoolNameValidation("");
         }
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!emailRegex.test(email)) {
+        // if (!emailRegex.test(email)) {
+        //     setEmailValidation("Please enter a valid email address.");
+        //     hasError = true;
+        // } else {
+        //     setEmailValidation("");
+        // }
+
+        if (!isValidEmail(email)) {
             setEmailValidation("Please enter a valid email address.");
             hasError = true;
         } else {
             setEmailValidation("");
         }
 
-        const handlePasswordRegex =
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
+        // const handlePasswordRegex =
+        //     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/;
 
-        if (!handlePasswordRegex.test(password)) {
+        // if (!handlePasswordRegex.test(password)) {
+        //     setPasswordError(
+        //         "Password must be as per below criteria.");
+        //     hasError = true;
+        // } else {
+        //     setPasswordError("");
+        // }
+
+        if (!isValidPassword(password)) {
             setPasswordError(
-                "Password must be as per below criteria.");
+                "Password must be as per below criteria."
+            );
             hasError = true;
         } else {
             setPasswordError("");

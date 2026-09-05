@@ -16,7 +16,6 @@ export function isValidEmail(
     );
 }
 
-
 // =========================================================
 // EMAIL VALIDATION WITH ERROR MESSAGE
 // =========================================================
@@ -45,7 +44,6 @@ export function validateEmail(
     return null;
 }
 
-
 // =========================================================
 // PHONE NUMBER CLEANING
 // =========================================================
@@ -66,7 +64,6 @@ export function cleanPhone(
 ): string {
     return value.replace(/\D/g, "");
 }
-
 
 // =========================================================
 // PHONE NUMBER VALIDATION
@@ -89,7 +86,6 @@ export function isValidPhone(
         cleanPhone(value)
     );
 }
-
 
 // =========================================================
 // PHONE VALIDATION WITH ERROR MESSAGE
@@ -119,6 +115,47 @@ export function validatePhone(
     return null;
 }
 
+// =========================================================
+// PASSWORD VALIDATION
+// =========================================================
+// Checks whether a password:
+// - contains at least 8 characters
+// - contains at least one uppercase letter
+// - contains at least one lowercase letter
+// - contains at least one number
+// - contains at least one special character
+
+export function isValidPassword(
+    value: string
+): boolean {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*?]).{8,}$/.test(
+        value
+    );
+}
+
+// =========================================================
+// PASSWORD VALIDATION WITH ERROR MESSAGE
+// =========================================================
+// Used by forms where we want to show the user a specific
+// validation message.
+//
+// Returns:
+// - null when the password is valid
+// - an error message when the password is invalid
+
+export function validatePassword(
+    value: string
+): string | null {
+    if (!value.trim()) {
+        return "Password is required.";
+    }
+
+    if (!isValidPassword(value)) {
+        return "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.";
+    }
+
+    return null;
+}
 
 // =========================================================
 // DATE OF BIRTH VALIDATION & CONVERSION
@@ -193,7 +230,6 @@ export function parseDateOfBirth(
         .padStart(2, "0")}`;
 }
 
-
 // =========================================================
 // GENDER VALIDATION
 // =========================================================
@@ -218,7 +254,6 @@ export function isValidGender(
     );
 }
 
-
 // =========================================================
 // REQUIRED FIELD VALIDATION
 // =========================================================
@@ -230,4 +265,36 @@ export function isRequired(
     value: string
 ): boolean {
     return value.trim() !== "";
+}
+
+// =========================================================
+// DATE RANGE VALIDATION
+// =========================================================
+// Both dates are optional.
+//
+// If both dates are provided, End Date cannot be before
+// Start Date.
+//
+// Example:
+// Start Date: 01-04-2026
+// End Date:   31-03-2027
+// → valid
+//
+// Start Date: 01-04-2026
+// End Date:   01-03-2026
+// → invalid
+
+export function validateDateRange(
+    startDate: string,
+    endDate: string
+): string | null {
+    if (!startDate || !endDate) {
+        return null;
+    }
+
+    if (endDate < startDate) {
+        return "End Date cannot be before Start Date.";
+    }
+
+    return null;
 }

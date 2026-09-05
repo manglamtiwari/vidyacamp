@@ -709,11 +709,10 @@ export default function AdminUsersPage() {
                                 <input
                                     type="tel"
                                     inputMode="numeric"
-                                    maxLength={10}
                                     value={teacherPhone}
                                     onChange={(e) =>
                                         setTeacherPhone(
-                                            e.target.value.replace(/\D/g, "").slice(0, 10)
+                                            e.target.value.replace(/\D/g, "")
                                         )
                                     }
                                     placeholder="e.g. 9876543210"
@@ -828,11 +827,10 @@ export default function AdminUsersPage() {
                                 <input
                                     type="tel"
                                     inputMode="numeric"
-                                    maxLength={10}
                                     value={studentPhone}
                                     onChange={(e) =>
                                         setStudentPhone(
-                                            e.target.value.replace(/\D/g, "").slice(0, 10)
+                                            e.target.value.replace(/\D/g, "")
                                         )
                                     }
                                     placeholder="e.g. 9876543210"
@@ -860,11 +858,10 @@ export default function AdminUsersPage() {
                                 <input
                                     type="tel"
                                     inputMode="numeric"
-                                    maxLength={10}
                                     value={parentPhone}
                                     onChange={(e) =>
                                         setParentPhone(
-                                            e.target.value.replace(/\D/g, "").slice(0, 10)
+                                            e.target.value.replace(/\D/g, "")
                                         )
                                     }
                                     placeholder="e.g. 9876543210"

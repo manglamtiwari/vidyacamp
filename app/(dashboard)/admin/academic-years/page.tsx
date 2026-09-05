@@ -123,6 +123,20 @@ export default function AcademicYearsPage() {
             return;
         }
 
+        if (!startDate || !endDate) {
+            setErrorMessage(
+                "Start Date and End Date are required."
+            );
+            return;
+        }
+
+        if (endDate < startDate) {
+            setErrorMessage(
+                "End Date cannot be before Start Date."
+            );
+            return;
+        }
+
         setIsSaving(true);
         setErrorMessage("");
 
@@ -235,6 +249,20 @@ export default function AcademicYearsPage() {
             return;
         }
 
+        if (!editingStartDate || !editingEndDate) {
+            setErrorMessage(
+                "Start Date and End Date are required."
+            );
+            return;
+        }
+
+        if (editingEndDate < editingStartDate) {
+            setErrorMessage(
+                "End Date cannot be before Start Date."
+            );
+            return;
+        }
+
         setIsSaving(true);
         setErrorMessage("");
 
@@ -243,7 +271,7 @@ export default function AcademicYearsPage() {
                 (year) =>
                     year.id !== yearId &&
                     year.name.trim().toLowerCase() ===
-                        trimmedName.toLowerCase()
+                    trimmedName.toLowerCase()
             );
 
             if (duplicate) {
@@ -518,17 +546,24 @@ export default function AcademicYearsPage() {
                                     className="block text-sm font-medium mb-2"
                                 >
                                     Start Date
+                                    <span className="text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
                                     id="startDate"
                                     type="date"
+                                    required
                                     value={startDate}
                                     onChange={(e) =>
                                         setStartDate(
                                             e.target.value
                                         )
                                     }
+                                    onClick={(e) => {
+                                        e.currentTarget.showPicker();
+                                    }}
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
@@ -539,17 +574,24 @@ export default function AcademicYearsPage() {
                                     className="block text-sm font-medium mb-2"
                                 >
                                     End Date
+                                    <span className="text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
                                     id="endDate"
                                     type="date"
+                                    required
                                     value={endDate}
                                     onChange={(e) =>
                                         setEndDate(
                                             e.target.value
                                         )
                                     }
+                                     onClick={(e) => {
+                                        e.currentTarget.showPicker();
+                                    }}
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
@@ -621,6 +663,9 @@ export default function AcademicYearsPage() {
                                                 className="block text-sm font-medium mb-2"
                                             >
                                                 Academic Year
+                                                <span className="text-red-500">
+                                        *
+                                    </span>
                                             </label>
 
                                             <input
@@ -641,13 +686,19 @@ export default function AcademicYearsPage() {
 
                                         <div>
                                             <label
+                                                htmlFor="editingStartDate"
                                                 className="block text-sm font-medium mb-2"
                                             >
                                                 Start Date
+                                                <span className="text-red-500">
+                                        *
+                                    </span>
                                             </label>
 
                                             <input
+                                                id="editingStartDate"
                                                 type="date"
+                                                required
                                                 value={
                                                     editingStartDate
                                                 }
@@ -657,19 +708,28 @@ export default function AcademicYearsPage() {
                                                             .value
                                                     )
                                                 }
+                                                onClick={(e) => {
+                                                    e.currentTarget.showPicker();
+                                                }}
                                                 className="w-full border rounded-md p-3"
                                             />
                                         </div>
 
                                         <div>
                                             <label
+                                                htmlFor="editingEndDate"
                                                 className="block text-sm font-medium mb-2"
                                             >
                                                 End Date
+                                                <span className="text-red-500">
+                                        *
+                                    </span>
                                             </label>
 
                                             <input
+                                                id="editingEndDate"
                                                 type="date"
+                                                required
                                                 value={
                                                     editingEndDate
                                                 }
@@ -679,6 +739,9 @@ export default function AcademicYearsPage() {
                                                             .value
                                                     )
                                                 }
+                                                onClick={(e) => {
+                                                    e.currentTarget.showPicker();
+                                                }}
                                                 className="w-full border rounded-md p-3"
                                             />
                                         </div>

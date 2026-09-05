@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SyntheticEvent } from "react";
+import { isValidEmail } from "@/lib/validations";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -24,12 +25,11 @@ export default function LoginPage() {
 
         let hasError = false;
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)) {
+        if (!isValidEmail(email)) {
             setEmailValidation("Please enter a valid email address.");
             hasError = true;
         }
+
 
         if (password.trim() === "") {
             setPasswordValidation("Please enter a valid password.");
