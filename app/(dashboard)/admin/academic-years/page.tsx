@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 type AcademicYear = {
@@ -14,6 +15,7 @@ type AcademicYear = {
 };
 
 export default function AcademicYearsPage() {
+    const router = useRouter();
     const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +40,8 @@ export default function AcademicYearsPage() {
         } = await supabase.auth.getUser();
 
         if (!user) {
-            throw new Error("You are not logged in.");
+            router.replace("/login");
+            return null;
         }
 
         const { data: membership, error } = await supabase
@@ -55,9 +58,8 @@ export default function AcademicYearsPage() {
         }
 
         if (!membership) {
-            throw new Error(
-                "Could not find an active admin school membership."
-            );
+            router.replace("/login");
+            return null;
         }
 
         return membership.school_id;
@@ -69,7 +71,9 @@ export default function AcademicYearsPage() {
 
         try {
             const schoolId = await getAdminSchoolId();
-
+            if (!schoolId) {
+                return;
+            }
             const { data, error } = await supabase
                 .from("academic_years")
                 .select(
@@ -142,7 +146,9 @@ export default function AcademicYearsPage() {
 
         try {
             const schoolId = await getAdminSchoolId();
-
+            if (!schoolId) {
+                return;
+            }
             const alreadyExists = academicYears.some(
                 (year) =>
                     year.name.trim().toLowerCase() ===
@@ -340,6 +346,9 @@ export default function AcademicYearsPage() {
         try {
             const schoolId = await getAdminSchoolId();
 
+            if (!schoolId) {
+                return;
+            }
             /*
              * First remove the current flag from all years
              * belonging to this school.
@@ -589,7 +598,7 @@ export default function AcademicYearsPage() {
                                             e.target.value
                                         )
                                     }
-                                     onClick={(e) => {
+                                    onClick={(e) => {
                                         e.currentTarget.showPicker();
                                     }}
                                     className="w-full border rounded-md p-3"
@@ -664,8 +673,8 @@ export default function AcademicYearsPage() {
                                             >
                                                 Academic Year
                                                 <span className="text-red-500">
-                                        *
-                                    </span>
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
@@ -691,8 +700,8 @@ export default function AcademicYearsPage() {
                                             >
                                                 Start Date
                                                 <span className="text-red-500">
-                                        *
-                                    </span>
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
@@ -722,8 +731,8 @@ export default function AcademicYearsPage() {
                                             >
                                                 End Date
                                                 <span className="text-red-500">
-                                        *
-                                    </span>
+                                                    *
+                                                </span>
                                             </label>
 
                                             <input
