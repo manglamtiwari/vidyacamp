@@ -1,6 +1,9 @@
 "use client";
 
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+const supabase = createClient();
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SyntheticEvent } from "react";

@@ -3,8 +3,6 @@
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
-
-
 //const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
 
 const INACTIVITY_LIMIT = 15 * 60 * 1000;  // 15 mins inactive session handle 
@@ -21,7 +19,6 @@ export default function SessionTimeout() {
 
         const resetTimer = () => {
             clearTimeout(timeoutId);
-
             timeoutId = setTimeout(() => {
                 logoutUser();
             }, INACTIVITY_LIMIT);

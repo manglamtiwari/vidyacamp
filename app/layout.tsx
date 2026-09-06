@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 import "./globals.css";
+import SessionTimeout from "./(dashboard)/SessionTimeout";
 
 const mulish = Mulish({
   variable: "--font-mulish",
@@ -23,7 +24,10 @@ export default function RootLayout({
       lang="en"
       className={`${mulish.variable} h-full antialiased`}
     >
-      <body className={`min-h-full flex flex-col ${mulish.className}`}>{children}</body>
+      <body className={`min-h-full flex flex-col ${mulish.className}`}>
+        <SessionTimeout />
+        {children}
+      </body>
     </html>
   );
 }

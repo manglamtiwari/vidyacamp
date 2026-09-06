@@ -1,5 +1,5 @@
-import { supabase } from "@/lib/supabase";
-
+// import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 export type UserRole = "admin" | "teacher" | "student";
 
 export async function getUserRole(): Promise<UserRole | null> {
