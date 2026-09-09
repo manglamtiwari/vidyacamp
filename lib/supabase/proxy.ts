@@ -50,13 +50,28 @@ export async function updateSession(
     // } = await supabase.auth.getClaims();
     const { data, error } = await supabase.auth.getClaims();
 
-const claims = error ? null : data?.claims;
+    const claims = error ? null : data?.claims;
 
     const pathname = request.nextUrl.pathname;
 
     const isPublicRoute =
         pathname === "/login" ||
-        pathname === "/register";
+        pathname === "/register" ||
+        pathname === "/auth/confirm";
+
+    const teacherVerifiedUserId =
+        request.cookies.get("teacher_verified")?.value;
+
+    if (
+        pathname === "/set-password" &&
+        (!claims || !teacherVerifiedUserId || teacherVerifiedUserId !== claims.sub)
+    ) {
+        const url = request.nextUrl.clone();
+
+        url.pathname = claims ? "/dashboard" : "/login";
+
+        return NextResponse.redirect(url);
+    }
 
     if (!claims && !isPublicRoute) {
         const url = request.nextUrl.clone();

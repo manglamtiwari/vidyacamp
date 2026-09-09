@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ type Teacher = {
     name: string;
     phone: string | null;
     email: string | null;
+    dob: string | null;
     is_active: boolean;
 };
 
@@ -73,6 +74,7 @@ export default function AdminUsersPage() {
     const [employeeId, setEmployeeId] = useState("");
     const [teacherPhone, setTeacherPhone] = useState("");
     const [teacherEmail, setTeacherEmail] = useState("");
+    const [teacherDob, setTeacherDob] = useState("");
 
     const [showStudentForm, setShowStudentForm] = useState(false);
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
@@ -157,7 +159,7 @@ export default function AdminUsersPage() {
             ] = await Promise.all([
                 supabase
                     .from("teachers")
-                    .select("id, employee_id, name, phone, email, is_active")
+                    .select("id, employee_id, name, phone, email, dob, is_active")
                     .eq("school_id", schoolId)
                     .order("name"),
 
@@ -245,9 +247,89 @@ export default function AdminUsersPage() {
         setEmployeeId("");
         setTeacherPhone("");
         setTeacherEmail("");
+        setTeacherDob("");
         setEditingTeacherId(null);
         setShowTeacherForm(false);
     }
+
+    // async function handleSaveTeacher(
+    //     e: React.FormEvent<HTMLFormElement>
+    // ) {
+    //     e.preventDefault();
+
+    //     if (!teacherName.trim()) {
+    //         alert("Teacher name cannot be empty.");
+    //         return;
+    //     }
+
+    //     const teacherPhoneError = validatePhone(teacherPhone, "Teacher phone number");
+    //     if (teacherPhoneError) {
+    //         alert(teacherPhoneError);
+    //         return;
+    //     }
+
+    //     const teacherEmailError = validateEmail(teacherEmail, "Teacher email");
+    //     if (teacherEmailError) {
+    //         alert(teacherEmailError);
+    //         return;
+    //     }
+
+    //     setIsSaving(true);
+
+    //     try {
+    //         if (editingTeacherId) {
+    //             const { error } = await supabase
+    //                 .from("teachers")
+    //                 .update({
+    //                     employee_id: employeeId.trim() || null,
+    //                     name: teacherName.trim(),
+    //                     phone: teacherPhone.trim() || null,
+    //                     email: teacherEmail.trim() || null,
+    //                 })
+    //                 .eq("id", editingTeacherId);
+
+    //             if (error) throw error;
+
+    //             alert("Teacher updated successfully.");
+    //             resetTeacherForm();
+    //             await loadPeople();
+    //             return;
+    //         }
+
+    //         const schoolId = await getAdminSchoolId();
+
+    //         const { error } = await supabase
+    //             .from("teachers")
+    //             .insert({
+    //                 school_id: schoolId,
+    //                 employee_id: employeeId.trim() || null,
+    //                 name: teacherName.trim(),
+    //                 phone: teacherPhone.trim() || null,
+    //                 email: teacherEmail.trim() || null,
+    //             });
+
+    //         if (error) {
+    //             if (error.code === "23505") {
+    //                 alert(
+    //                     "This Employee ID is already being used in this school."
+    //                 );
+    //                 return;
+    //             }
+    //             throw error;
+    //         }
+
+    //         alert("Teacher added successfully.");
+    //         resetTeacherForm();
+    //         await loadPeople();
+    //     } catch (error) {
+    //         console.error("Could not save teacher:", error);
+    //         alert("Could not save teacher. Please try again.");
+    //     } finally {
+    //         setIsSaving(false);
+    //     }
+    // }
+
+    // new handle teacher
 
     async function handleSaveTeacher(
         e: React.FormEvent<HTMLFormElement>
@@ -282,6 +364,7 @@ export default function AdminUsersPage() {
                         name: teacherName.trim(),
                         phone: teacherPhone.trim() || null,
                         email: teacherEmail.trim() || null,
+
                     })
                     .eq("id", editingTeacherId);
 
@@ -293,29 +376,41 @@ export default function AdminUsersPage() {
                 return;
             }
 
-            const schoolId = await getAdminSchoolId();
+            const response = await fetch("/api/admin/invite-teacher", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: teacherName,
+                    employeeId: employeeId,
+                    phone: teacherPhone,
+                    email: teacherEmail,
+                    dob: teacherDob,
+                }),
+            });
 
-            const { error } = await supabase
-                .from("teachers")
-                .insert({
-                    school_id: schoolId,
-                    employee_id: employeeId.trim() || null,
-                    name: teacherName.trim(),
-                    phone: teacherPhone.trim() || null,
-                    email: teacherEmail.trim() || null,
-                });
+            const result = await response.json();
 
-            if (error) {
-                if (error.code === "23505") {
+            if (!response.ok) {
+                if (
+                    result.error?.includes("teachers_school_employee_id_unique") ||
+                    result.error?.includes("duplicate key")
+                ) {
                     alert(
                         "This Employee ID is already being used in this school."
                     );
                     return;
                 }
-                throw error;
+
+                alert(result.error || "Could not send teacher invitation.");
+                return;
             }
 
-            alert("Teacher added successfully.");
+            alert(
+                "Teacher added successfully. A password setup email has been sent to the teacher's email."
+            );
+
             resetTeacherForm();
             await loadPeople();
         } catch (error) {
@@ -326,12 +421,68 @@ export default function AdminUsersPage() {
         }
     }
 
+    async function handleResendPasswordSetup(
+        teacher: Teacher
+    ) {
+        if (!teacher.email) {
+            alert("This teacher does not have an email address.");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Resend the password setup email to ${teacher.email}?`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                "/api/admin/resend-teacher-invite",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        teacherId: teacher.id,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(
+                    result.error ||
+                    "Could not resend teacher invitation."
+                );
+                return;
+            }
+
+            alert(
+                "Password setup email sent successfully."
+            );
+        } catch (error) {
+            console.error(
+                "Could not resend teacher invitation:",
+                error
+            );
+
+            alert(
+                "Could not resend teacher invitation. Please try again."
+            );
+        }
+    }
+
     function handleEditTeacher(teacher: Teacher) {
         setEditingTeacherId(teacher.id);
         setTeacherName(teacher.name);
         setEmployeeId(teacher.employee_id || "");
         setTeacherPhone(teacher.phone || "");
         setTeacherEmail(teacher.email || "");
+        setTeacherDob(teacher.dob || "");
         setShowTeacherForm(true);
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -632,11 +783,10 @@ export default function AdminUsersPage() {
                         resetStudentForm();
                         setActiveTab("teachers");
                     }}
-                    className={`px-5 py-3 font-medium ${
-                        activeTab === "teachers"
-                            ? "border-b-2 border-emerald-600 text-emerald-700"
-                            : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-5 py-3 font-medium ${activeTab === "teachers"
+                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                 >
                     Teachers ({teachers.length})
                 </button>
@@ -648,11 +798,10 @@ export default function AdminUsersPage() {
                         resetStudentForm();
                         setActiveTab("students");
                     }}
-                    className={`px-5 py-3 font-medium ${
-                        activeTab === "students"
-                            ? "border-b-2 border-emerald-600 text-emerald-700"
-                            : "text-gray-500 hover:text-gray-700"
-                    }`}
+                    className={`px-5 py-3 font-medium ${activeTab === "students"
+                        ? "border-b-2 border-emerald-600 text-emerald-700"
+                        : "text-gray-500 hover:text-gray-700"
+                        }`}
                 >
                     Students ({students.length})
                 </button>
@@ -701,6 +850,25 @@ export default function AdminUsersPage() {
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2" htmlFor="teacherDob">
+                                    Date of Birth
+                                </label>
+                                <input
+                                    id="teacherDob"
+                                    type="date"
+
+                                    value={teacherDob}
+                                    onChange={(e) => setTeacherDob(e.target.value)}
+                                    onClick={(e) => {
+                                        e.currentTarget.showPicker();
+                                    }}
+                                    className="w-full border rounded-md p-3"
+                                    required
+                                />
+                            </div>
+
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
@@ -1049,6 +1217,16 @@ export default function AdminUsersPage() {
                                                                     className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                                 >
                                                                     Edit
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        handleResendPasswordSetup(teacher)
+                                                                    }
+                                                                    className="px-4 py-2 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50"
+                                                                >
+                                                                    Resend Password Setup
                                                                 </button>
 
                                                                 {teacher.is_active ? (
