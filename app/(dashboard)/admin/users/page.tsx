@@ -368,8 +368,18 @@ export default function AdminUsersPage() {
                     })
                     .eq("id", editingTeacherId);
 
-                if (error) throw error;
+                // if (error) throw error;
 
+                if (error) {
+                    if (error.code === "23505") {
+                        alert(
+                            "This Employee ID is already being used by another teacher in this school."
+                        );
+                        return;
+                    }
+
+                    throw error;
+                }
                 alert("Teacher updated successfully.");
                 resetTeacherForm();
                 await loadPeople();
@@ -840,25 +850,25 @@ export default function AdminUsersPage() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Employee ID
+                                    Employee ID <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={employeeId}
                                     onChange={(e) => setEmployeeId(e.target.value)}
                                     placeholder="e.g. EMP-101"
+                                    required
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2" htmlFor="teacherDob">
-                                    Date of Birth
+                                    Date of Birth <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     id="teacherDob"
                                     type="date"
-
                                     value={teacherDob}
                                     onChange={(e) => setTeacherDob(e.target.value)}
                                     onClick={(e) => {
@@ -893,7 +903,7 @@ export default function AdminUsersPage() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Email
+                                    Email  <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="email"
@@ -901,6 +911,7 @@ export default function AdminUsersPage() {
                                     onChange={(e) => setTeacherEmail(e.target.value)}
                                     placeholder="e.g. teacher@school.com"
                                     className="w-full border rounded-md p-3"
+                                    required
                                 />
                             </div>
                         </div>
@@ -1173,6 +1184,7 @@ export default function AdminUsersPage() {
                                                 <tr>
                                                     <th className="text-left p-4">Employee ID</th>
                                                     <th className="text-left p-4">Name</th>
+                                                    <th className="text-left p-4">Date of Birth</th>
                                                     <th className="text-left p-4">Phone</th>
                                                     <th className="text-left p-4">Email</th>
                                                     <th className="text-left p-4">Status</th>
@@ -1187,6 +1199,9 @@ export default function AdminUsersPage() {
                                                         </td>
                                                         <td className="p-4 font-medium">
                                                             {teacher.name}
+                                                        </td>
+                                                        <td className="p-4">
+                                                            {formatDateOfBirth(teacher.dob)}
                                                         </td>
                                                         <td className="p-4">
                                                             {teacher.phone || "-"}

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
             employeeId,
             phone,
             email,
-            dob
+            dob,
         } = body;
 
         if (!name?.trim()) {
@@ -65,6 +65,42 @@ export async function POST(request: Request) {
                 { error: "Teacher date of birth is required." },
                 { status: 400 }
             );
+        }
+
+        // Check for duplicate Employee ID before creating the Auth account
+        if (employeeId?.trim()) {
+            const { data: existingTeacher, error: existingTeacherError } =
+                await supabase
+                    .from("teachers")
+                    .select("id")
+                    .eq("school_id", membership.school_id)
+                    .eq("employee_id", employeeId.trim())
+                    .maybeSingle();
+
+            if (existingTeacherError) {
+                console.error(
+                    "Could not check Employee ID:",
+                    existingTeacherError
+                );
+
+                return NextResponse.json(
+                    {
+                        error:
+                            "Could not verify Employee ID. Please try again.",
+                    },
+                    { status: 500 }
+                );
+            }
+
+            if (existingTeacher) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "This Employee ID is already being used by another teacher in this school.",
+                    },
+                    { status: 400 }
+                );
+            }
         }
 
         // Supabase secret key — server only
@@ -95,7 +131,72 @@ export async function POST(request: Request) {
 
         const authUser = userData.user;
 
-        // Send password setup email
+        // Create teacher record
+        const { error: teacherError } =
+            await supabase
+                .from("teachers")
+                .insert({
+                    school_id: membership.school_id,
+                    user_id: authUser.id,
+                    employee_id: employeeId?.trim() || null,
+                    name: name.trim(),
+                    phone: phone?.trim() || null,
+                    email: email.trim(),
+                    dob: dob || null,
+                    is_active: true,
+                });
+
+        if (teacherError) {
+            // Remove Auth user if teacher record could not be created
+            await supabaseAdmin.auth.admin.deleteUser(
+                authUser.id
+            );
+
+            if (teacherError.code === "23505") {
+                return NextResponse.json(
+                    {
+                        error:
+                            "This Employee ID is already being used by another teacher in this school.",
+                    },
+                    { status: 400 }
+                );
+            }
+
+            return NextResponse.json(
+                { error: teacherError.message },
+                { status: 400 }
+            );
+        }
+
+        // Create school membership
+        const { error: schoolUserError } =
+            await supabase
+                .from("school_users")
+                .insert({
+                    school_id: membership.school_id,
+                    user_id: authUser.id,
+                    role: "teacher",
+                    status: "active",
+                });
+
+        if (schoolUserError) {
+            // Remove teacher record and Auth user if membership creation fails
+            await supabase
+                .from("teachers")
+                .delete()
+                .eq("user_id", authUser.id);
+
+            await supabaseAdmin.auth.admin.deleteUser(
+                authUser.id
+            );
+
+            return NextResponse.json(
+                { error: schoolUserError.message },
+                { status: 400 }
+            );
+        }
+
+        // Send password setup email only after all teacher records are created
         const { error: resetEmailError } =
             await supabaseAdmin.auth.resetPasswordForEmail(
                 email.trim(),
@@ -105,6 +206,19 @@ export async function POST(request: Request) {
             );
 
         if (resetEmailError) {
+            // Remove teacher membership and teacher record
+            await supabase
+                .from("school_users")
+                .delete()
+                .eq("user_id", authUser.id)
+                .eq("school_id", membership.school_id);
+
+            await supabase
+                .from("teachers")
+                .delete()
+                .eq("user_id", authUser.id);
+
+            // Remove Auth user
             await supabaseAdmin.auth.admin.deleteUser(
                 authUser.id
             );
@@ -115,58 +229,9 @@ export async function POST(request: Request) {
             );
         }
 
-        // Create teacher record
-        const { error: teacherError } = await supabase
-            .from("teachers")
-            .insert({
-                school_id: membership.school_id,
-                user_id: authUser.id,
-                employee_id: employeeId?.trim() || null,
-                name: name.trim(),
-                phone: phone?.trim() || null,
-                email: email.trim(),
-                dob: dob || null,
-                is_active: true,
-            });
-
-        if (teacherError) {
-            // Remove Auth user if teacher record could not be created
-            await supabaseAdmin.auth.admin.deleteUser(authUser.id);
-
-            return NextResponse.json(
-                { error: teacherError.message },
-                { status: 400 }
-            );
-        }
-
-        // Create school membership
-        const { error: schoolUserError } = await supabase
-            .from("school_users")
-            .insert({
-                school_id: membership.school_id,
-                user_id: authUser.id,
-                role: "teacher",
-                status: "active",
-            });
-
-        if (schoolUserError) {
-            // Remove teacher record and Auth user if membership creation fails
-            await supabase
-                .from("teachers")
-                .delete()
-                .eq("user_id", authUser.id);
-
-            await supabaseAdmin.auth.admin.deleteUser(authUser.id);
-
-            return NextResponse.json(
-                { error: schoolUserError.message },
-                { status: 400 }
-            );
-        }
-
         return NextResponse.json({
             success: true,
-            message: "Password setup email sent successfully."
+            message: "Password setup email sent successfully.",
         });
     } catch (error) {
         console.error("Invite teacher error:", error);
