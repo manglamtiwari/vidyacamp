@@ -63,6 +63,19 @@ export default function AdminUsersPage() {
     const [students, setStudents] = useState<Student[]>([]);
     const [classes, setClasses] = useState<SchoolClass[]>([]);
     const [sections, setSections] = useState<SchoolSection[]>([]);
+    const [teacherSearch, setTeacherSearch] = useState("");
+    const [teacherDobFilter, setTeacherDobFilter] = useState("");
+    const [teacherStatusFilter, setTeacherStatusFilter] = useState<
+        "all" | "active" | "inactive"
+    >("all");
+    const [studentSearch, setStudentSearch] = useState("");
+    const [studentDobFilter, setStudentDobFilter] = useState("");
+    const [studentGenderFilter, setStudentGenderFilter] = useState("all");
+    const [studentClassFilter, setStudentClassFilter] = useState("all");
+    const [studentSectionFilter, setStudentSectionFilter] = useState("all");
+    const [studentStatusFilter, setStudentStatusFilter] = useState<
+        "all" | "active" | "inactive"
+    >("all");
 
     const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
@@ -1172,10 +1185,276 @@ export default function AdminUsersPage() {
                         </div>
                     ) : (
                         <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
+                            {/* <div className="p-4 border-b"> */}
+                            {activeTab === "teachers" && (
+                                <div className="p-4 border-b">
+                                    <p className="text-sm font-medium text-gray-600 mb-3">
+                                        Filter Teachers
+                                    </p>
+                                    {/* <div className="flex flex-wrap gap-3"> */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Search name, employee ID, phone or email..."
+                                            value={teacherSearch}
+                                            onChange={(e) => setTeacherSearch(e.target.value)}
+                                            // className="border rounded-md px-3 py-2 text-sm"
+                                            className="border rounded-md px-3 py-2 text-sm flex-1 min-w-[280px]"
+                                        />
+
+                                        <input
+                                            type="date"
+                                            value={teacherDobFilter}
+                                            onChange={(e) => setTeacherDobFilter(e.target.value)}
+                                            className="border rounded-md px-3 py-2 text-sm"
+                                        />
+
+                                        <select
+                                            value={teacherStatusFilter}
+                                            onChange={(e) =>
+                                                setTeacherStatusFilter(
+                                                    e.target.value as "all" | "active" | "inactive"
+                                                )
+                                            }
+                                            className="border rounded-md px-3 py-2 text-sm bg-white"
+                                        >
+                                            <option value="all">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setTeacherSearch("");
+                                                setTeacherDobFilter("");
+                                                setTeacherStatusFilter("all");
+                                            }}
+                                            className="border rounded-md px-3 py-2 text-sm"
+                                        >
+                                            Clear Filters
+                                        </button>
+                                        <span className="ml-auto text-sm text-gray-500 self-center">
+                                            Showing{" "}
+                                            {
+                                                teachers.filter((teacher) => {
+                                                    const search = teacherSearch.toLowerCase().trim();
+
+                                                    const matchesSearch =
+                                                        !search ||
+                                                        teacher.name.toLowerCase().includes(search) ||
+                                                        (teacher.employee_id || "").toLowerCase().includes(search) ||
+                                                        (teacher.phone || "").toLowerCase().includes(search) ||
+                                                        (teacher.email || "").toLowerCase().includes(search);
+
+                                                    const matchesDob =
+                                                        !teacherDobFilter ||
+                                                        teacher.dob === teacherDobFilter;
+
+                                                    const matchesStatus =
+                                                        teacherStatusFilter === "all" ||
+                                                        (teacherStatusFilter === "active" && teacher.is_active) ||
+                                                        (teacherStatusFilter === "inactive" && !teacher.is_active);
+
+                                                    return matchesSearch && matchesDob && matchesStatus;
+                                                }).length
+                                            }{" "}
+                                            of {teachers.length} teachers
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            {activeTab === "students" && (
+                                <div className="p-4 border-b">
+                                    <p className="text-sm font-medium text-gray-600 mb-3">
+                                        Filter Students
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Search admission no., name, email, phone or parent..."
+                                            value={studentSearch}
+                                            onChange={(e) => setStudentSearch(e.target.value)}
+                                            // className="border rounded-md px-3 py-2 text-sm"
+                                            className="border rounded-md px-3 py-2 text-sm flex-1 min-w-[280px]"
+                                        />
+
+                                        <input
+                                            type="date"
+                                            value={studentDobFilter}
+                                            onChange={(e) => setStudentDobFilter(e.target.value)}
+                                            className="border rounded-md px-3 py-2 text-sm"
+                                        />
+
+                                        <select
+                                            value={studentGenderFilter}
+                                            onChange={(e) => setStudentGenderFilter(e.target.value)}
+                                            className="border rounded-md px-3 py-2 text-sm bg-white"
+                                        >
+                                            <option value="all">All Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+
+                                        <select
+                                            value={studentClassFilter}
+                                            onChange={(e) => {
+                                                setStudentClassFilter(e.target.value);
+                                                setStudentSectionFilter("all");
+                                            }}
+                                            className="border rounded-md px-3 py-2 text-sm bg-white"
+                                        >
+                                            <option value="all">All Classes</option>
+                                            {classes.map((schoolClass) => (
+                                                <option key={schoolClass.id} value={schoolClass.id}>
+                                                    {schoolClass.name}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        <select
+                                            value={studentSectionFilter}
+                                            onChange={(e) => setStudentSectionFilter(e.target.value)}
+                                            className="border rounded-md px-3 py-2 text-sm bg-white"
+                                        >
+                                            <option value="all">All Sections</option>
+                                            {/* {sections
+                                                .filter(
+                                                    (section) =>
+                                                        studentClassFilter === "all" ||
+                                                        section.class_id === studentClassFilter
+                                                )
+                                                .map((section) => (
+                                                    <option key={section.id} value={section.id}>
+                                                        {section.name}
+                                                    </option>
+                                                ))} */}
+                                            {Array.from(
+                                                new Map(
+                                                    sections
+                                                        .filter(
+                                                            (section) =>
+                                                                studentClassFilter === "all" ||
+                                                                section.class_id === studentClassFilter
+                                                        )
+                                                        .map((section) => [section.name, section])
+                                                ).values()
+                                            )
+                                                .sort((a, b) => a.name.localeCompare(b.name))
+                                                .map((section) => (
+                                                    <option key={section.name} value={section.name}>
+                                                        {section.name}
+                                                    </option>
+                                                ))}
+                                        </select>
+
+                                        <select
+                                            value={studentStatusFilter}
+                                            onChange={(e) =>
+                                                setStudentStatusFilter(
+                                                    e.target.value as "all" | "active" | "inactive"
+                                                )
+                                            }
+                                            className="border rounded-md px-3 py-2 text-sm bg-white"
+                                        >
+                                            <option value="all">All Status</option>
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStudentSearch("");
+                                                setStudentDobFilter("");
+                                                setStudentGenderFilter("all");
+                                                setStudentClassFilter("all");
+                                                setStudentSectionFilter("all");
+                                                setStudentStatusFilter("all");
+                                            }}
+                                            className="border rounded-md px-3 py-2 text-sm"
+                                        >
+                                            Clear Filters
+                                        </button>
+                                        <span className="ml-auto text-sm text-gray-500 self-center">
+                                            Showing{" "}
+                                            {
+                                                students.filter((student) => {
+                                                    const search = studentSearch.toLowerCase().trim();
+
+                                                    const matchesSearch =
+                                                        !search ||
+                                                        student.admission_no.toLowerCase().includes(search) ||
+                                                        student.name.toLowerCase().includes(search) ||
+                                                        (student.student_email || "").toLowerCase().includes(search) ||
+                                                        (student.student_phone || "").toLowerCase().includes(search) ||
+                                                        (student.parent_name || "").toLowerCase().includes(search) ||
+                                                        (student.parent_phone || "").toLowerCase().includes(search) ||
+                                                        (student.parent_email || "").toLowerCase().includes(search);
+
+                                                    const matchesDob =
+                                                        !studentDobFilter ||
+                                                        student.date_of_birth === studentDobFilter;
+
+                                                    const matchesGender =
+                                                        studentGenderFilter === "all" ||
+                                                        student.gender === studentGenderFilter;
+
+                                                    const matchesClass =
+                                                        studentClassFilter === "all" ||
+                                                        student.class_id === studentClassFilter;
+
+                                                    const matchesSection =
+                                                        studentSectionFilter === "all" ||
+                                                        sections.find((section) => section.id === student.section_id)?.name ===
+                                                        studentSectionFilter;
+
+                                                    const matchesStatus =
+                                                        studentStatusFilter === "all" ||
+                                                        (studentStatusFilter === "active" && student.is_active) ||
+                                                        (studentStatusFilter === "inactive" && !student.is_active);
+
+                                                    return (
+                                                        matchesSearch &&
+                                                        matchesDob &&
+                                                        matchesGender &&
+                                                        matchesClass &&
+                                                        matchesSection &&
+                                                        matchesStatus
+                                                    );
+                                                }).length
+                                            }{" "}
+                                            of {students.length} students
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            {/* </div> */}
                             {activeTab === "teachers" ? (
-                                teachers.length === 0 ? (
+                                teachers.filter((teacher) => {
+                                    const search = teacherSearch.toLowerCase().trim();
+
+                                    const matchesSearch =
+                                        !search ||
+                                        teacher.name.toLowerCase().includes(search) ||
+                                        (teacher.employee_id || "").toLowerCase().includes(search) ||
+                                        (teacher.phone || "").toLowerCase().includes(search) ||
+                                        (teacher.email || "").toLowerCase().includes(search);
+
+                                    const matchesDob =
+                                        !teacherDobFilter ||
+                                        teacher.dob === teacherDobFilter;
+
+                                    const matchesStatus =
+                                        teacherStatusFilter === "all" ||
+                                        (teacherStatusFilter === "active" && teacher.is_active) ||
+                                        (teacherStatusFilter === "inactive" && !teacher.is_active);
+
+                                    return matchesSearch && matchesDob && matchesStatus;
+                                }).length === 0 ? (
                                     <div className="p-10 text-center text-gray-500">
-                                        No teachers found.
+                                        No teachers match the selected filters.
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
@@ -1192,94 +1471,172 @@ export default function AdminUsersPage() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {teachers.map((teacher) => (
-                                                    <tr key={teacher.id} className="border-t">
-                                                        <td className="p-4">
-                                                            {teacher.employee_id || "-"}
-                                                        </td>
-                                                        <td className="p-4 font-medium">
-                                                            {teacher.name}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {formatDateOfBirth(teacher.dob)}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {teacher.phone || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {teacher.email || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <span
-                                                                className={
-                                                                    teacher.is_active
-                                                                        ? "text-emerald-700"
-                                                                        : "text-gray-500"
-                                                                }
-                                                            >
-                                                                {teacher.is_active
-                                                                    ? "Active"
-                                                                    : "Inactive"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <div className="flex justify-end gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        handleEditTeacher(teacher)
-                                                                    }
-                                                                    className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
-                                                                >
-                                                                    Edit
-                                                                </button>
+                                                {/* {teachers.map((teacher) => ( */}
+                                                {teachers
+                                                    // .filter((teacher) => {
+                                                    //     const search = teacherSearch.toLowerCase().trim();
 
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        handleResendPasswordSetup(teacher)
-                                                                    }
-                                                                    className="px-4 py-2 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50"
-                                                                >
-                                                                    Resend Password Setup
-                                                                </button>
+                                                    //     if (!search) return true;
 
-                                                                {teacher.is_active ? (
+                                                    //     return (
+                                                    //         teacher.name.toLowerCase().includes(search) ||
+                                                    //         (teacher.employee_id || "").toLowerCase().includes(search) ||
+                                                    //         (teacher.phone || "").toLowerCase().includes(search) ||
+                                                    //         (teacher.email || "").toLowerCase().includes(search)
+                                                    //     );
+                                                    // })
+                                                    .filter((teacher) => {
+                                                        const search = teacherSearch.toLowerCase().trim();
+
+                                                        const matchesSearch =
+                                                            !search ||
+                                                            teacher.name.toLowerCase().includes(search) ||
+                                                            (teacher.employee_id || "").toLowerCase().includes(search) ||
+                                                            (teacher.phone || "").toLowerCase().includes(search) ||
+                                                            (teacher.email || "").toLowerCase().includes(search);
+
+                                                        const matchesDob =
+                                                            !teacherDobFilter ||
+                                                            teacher.dob === teacherDobFilter;
+
+                                                        const matchesStatus =
+                                                            teacherStatusFilter === "all" ||
+                                                            (teacherStatusFilter === "active" && teacher.is_active) ||
+                                                            (teacherStatusFilter === "inactive" && !teacher.is_active);
+
+                                                        return matchesSearch && matchesDob && matchesStatus;
+                                                    })
+                                                    .map((teacher) => (
+                                                        <tr key={teacher.id} className="border-t">
+                                                            <td className="p-4">
+                                                                {teacher.employee_id || "-"}
+                                                            </td>
+                                                            <td className="p-4 font-medium">
+                                                                {teacher.name}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {formatDateOfBirth(teacher.dob)}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {teacher.phone || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {teacher.email || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <span
+                                                                    className={
+                                                                        teacher.is_active
+                                                                            ? "text-emerald-700"
+                                                                            : "text-gray-500"
+                                                                    }
+                                                                >
+                                                                    {teacher.is_active
+                                                                        ? "Active"
+                                                                        : "Inactive"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <div className="flex justify-end gap-2">
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleDeactivateTeacher(
-                                                                                teacher
-                                                                            )
+                                                                            handleEditTeacher(teacher)
                                                                         }
-                                                                        className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                                                                        className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                                     >
-                                                                        Deactivate
+                                                                        Edit
                                                                     </button>
-                                                                ) : (
+
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleRestoreTeacher(
-                                                                                teacher
-                                                                            )
+                                                                            handleResendPasswordSetup(teacher)
                                                                         }
-                                                                        className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                                                        className="px-4 py-2 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50"
                                                                     >
-                                                                        Activate
+                                                                        Resend Password Setup
                                                                     </button>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+
+                                                                    {teacher.is_active ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleDeactivateTeacher(
+                                                                                    teacher
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            Deactivate
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleRestoreTeacher(
+                                                                                    teacher
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                                                        >
+                                                                            Activate
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
                                             </tbody>
                                         </table>
                                     </div>
                                 )
-                            ) : students.length === 0 ? (
+                            ) : students.filter((student) => {
+                                const search = studentSearch.toLowerCase().trim();
+
+                                const matchesSearch =
+                                    !search ||
+                                    student.admission_no.toLowerCase().includes(search) ||
+                                    student.name.toLowerCase().includes(search) ||
+                                    (student.student_email || "").toLowerCase().includes(search) ||
+                                    (student.student_phone || "").toLowerCase().includes(search) ||
+                                    (student.parent_name || "").toLowerCase().includes(search) ||
+                                    (student.parent_phone || "").toLowerCase().includes(search) ||
+                                    (student.parent_email || "").toLowerCase().includes(search);
+
+                                const matchesDob =
+                                    !studentDobFilter ||
+                                    student.date_of_birth === studentDobFilter;
+
+                                const matchesGender =
+                                    studentGenderFilter === "all" ||
+                                    student.gender === studentGenderFilter;
+
+                                const matchesClass =
+                                    studentClassFilter === "all" ||
+                                    student.class_id === studentClassFilter;
+
+                                const matchesSection =
+                                    studentSectionFilter === "all" ||
+                                    sections.find((section) => section.id === student.section_id)?.name ===
+                                    studentSectionFilter;
+
+                                const matchesStatus =
+                                    studentStatusFilter === "all" ||
+                                    (studentStatusFilter === "active" && student.is_active) ||
+                                    (studentStatusFilter === "inactive" && !student.is_active);
+
+                                return (
+                                    matchesSearch &&
+                                    matchesDob &&
+                                    matchesGender &&
+                                    matchesClass &&
+                                    matchesSection &&
+                                    matchesStatus
+                                );
+                            }).length === 0 ? (
                                 <div className="p-10 text-center text-gray-500">
-                                    No students found.
+                                    No students match the selected filters.
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
@@ -1303,104 +1660,154 @@ export default function AdminUsersPage() {
                                         </thead>
 
                                         <tbody>
-                                            {students.map((student) => {
-                                                const classItem = classes.find(
-                                                    (item) => item.id === student.class_id
-                                                );
-                                                const sectionItem = sections.find(
-                                                    (item) => item.id === student.section_id
-                                                );
+                                            {/* {students.map((student) => { */}
+                                            {students
+                                                .filter((student) => {
+                                                    const search = studentSearch.toLowerCase().trim();
 
-                                                return (
-                                                    <tr key={student.id} className="border-t">
-                                                        <td className="p-4">
-                                                            {student.admission_no}
-                                                        </td>
-                                                        <td className="p-4 font-medium">
-                                                            {student.name}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.student_email || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.student_phone || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.parent_name || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.parent_phone || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.parent_email || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {formatDateOfBirth(student.date_of_birth)}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {student.gender || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {classItem?.name || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {sectionItem?.name || "-"}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <span
-                                                                className={
-                                                                    student.is_active
-                                                                        ? "text-emerald-700"
-                                                                        : "text-gray-500"
-                                                                }
-                                                            >
-                                                                {student.is_active
-                                                                    ? "Active"
-                                                                    : "Inactive"}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <div className="flex justify-end gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        handleEditStudent(student)
+                                                    const matchesSearch =
+                                                        !search ||
+                                                        student.admission_no.toLowerCase().includes(search) ||
+                                                        student.name.toLowerCase().includes(search) ||
+                                                        (student.student_email || "").toLowerCase().includes(search) ||
+                                                        (student.student_phone || "").toLowerCase().includes(search) ||
+                                                        (student.parent_name || "").toLowerCase().includes(search) ||
+                                                        (student.parent_phone || "").toLowerCase().includes(search) ||
+                                                        (student.parent_email || "").toLowerCase().includes(search);
+
+                                                    const matchesDob =
+                                                        !studentDobFilter ||
+                                                        student.date_of_birth === studentDobFilter;
+
+                                                    const matchesGender =
+                                                        studentGenderFilter === "all" ||
+                                                        student.gender === studentGenderFilter;
+
+                                                    const matchesClass =
+                                                        studentClassFilter === "all" ||
+                                                        student.class_id === studentClassFilter;
+
+                                                    // const matchesSection =
+                                                    //     studentSectionFilter === "all" ||
+                                                    //     student.section_id === studentSectionFilter;
+
+                                                    const matchesSection =
+                                                        studentSectionFilter === "all" ||
+                                                        sections.find((section) => section.id === student.section_id)?.name ===
+                                                        studentSectionFilter;
+
+                                                    const matchesStatus =
+                                                        studentStatusFilter === "all" ||
+                                                        (studentStatusFilter === "active" && student.is_active) ||
+                                                        (studentStatusFilter === "inactive" && !student.is_active);
+
+                                                    return (
+                                                        matchesSearch &&
+                                                        matchesDob &&
+                                                        matchesGender &&
+                                                        matchesClass &&
+                                                        matchesSection &&
+                                                        matchesStatus
+                                                    );
+                                                })
+                                                .map((student) => {
+                                                    const classItem = classes.find(
+                                                        (item) => item.id === student.class_id
+                                                    );
+                                                    const sectionItem = sections.find(
+                                                        (item) => item.id === student.section_id
+                                                    );
+
+                                                    return (
+                                                        <tr key={student.id} className="border-t">
+                                                            <td className="p-4">
+                                                                {student.admission_no}
+                                                            </td>
+                                                            <td className="p-4 font-medium">
+                                                                {student.name}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.student_email || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.student_phone || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.parent_name || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.parent_phone || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.parent_email || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {formatDateOfBirth(student.date_of_birth)}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {student.gender || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {classItem?.name || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                {sectionItem?.name || "-"}
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <span
+                                                                    className={
+                                                                        student.is_active
+                                                                            ? "text-emerald-700"
+                                                                            : "text-gray-500"
                                                                     }
-                                                                    className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                                 >
-                                                                    Edit
-                                                                </button>
+                                                                    {student.is_active
+                                                                        ? "Active"
+                                                                        : "Inactive"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <div className="flex justify-end gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            handleEditStudent(student)
+                                                                        }
+                                                                        className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
 
-                                                                {student.is_active ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            handleDeactivateStudent(
-                                                                                student
-                                                                            )
-                                                                        }
-                                                                        className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
-                                                                    >
-                                                                        Deactivate
-                                                                    </button>
-                                                                ) : (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            handleRestoreStudent(
-                                                                                student
-                                                                            )
-                                                                        }
-                                                                        className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                                                                    >
-                                                                        Activate
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
+                                                                    {student.is_active ? (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleDeactivateStudent(
+                                                                                    student
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            Deactivate
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                handleRestoreStudent(
+                                                                                    student
+                                                                                )
+                                                                            }
+                                                                            className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                                                        >
+                                                                            Activate
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                         </tbody>
                                     </table>
                                 </div>
