@@ -1550,6 +1550,14 @@ export default function AdminUsersPage() {
 
                                                                     <button
                                                                         type="button"
+                                                                        onClick={() => router.push(`/admin/teachers/${teacher.id}`)}
+                                                                        className="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50"
+                                                                    >
+                                                                        View Profile
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
                                                                         onClick={() =>
                                                                             handleResendPasswordSetup(teacher)
                                                                         }
