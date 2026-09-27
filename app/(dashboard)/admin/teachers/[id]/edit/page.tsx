@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+
 export default function TeacherEditPage() {
     const params = useParams();
     const router = useRouter();
@@ -11,6 +12,7 @@ export default function TeacherEditPage() {
     const teacherId = params.id as string;
     const [teacher, setTeacher] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [originalEmail, setOriginalEmail] = useState("");
 
     useEffect(() => {
         async function loadTeacher() {
@@ -24,7 +26,9 @@ export default function TeacherEditPage() {
                 console.error("Error loading teacher:", error);
             } else {
                 setTeacher(data);
-            }
+                setOriginalEmail(data.email?.trim().toLowerCase() || "");
+
+            }   
 
             setIsLoading(false);
         }
@@ -32,10 +36,40 @@ export default function TeacherEditPage() {
         loadTeacher();
     }, [teacherId]);
 
+async function handleSave() {
+    if (!teacher) return;
 
-    async function handleSave() {
-        if (!teacher) return;
+    const newEmail = teacher.email?.trim().toLowerCase() || "";
 
+    try {
+        // Update Auth email + teachers.email only if email changed
+        if (newEmail !== originalEmail) {
+            const response = await fetch(
+                "/api/admin/update-teacher-email",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        teacherId,
+                        email: newEmail,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(
+                    result.error ||
+                    "Could not update teacher email."
+                );
+                return;
+            }
+        }
+
+        // Update the rest of the teacher profile
         const { error } = await supabase
             .from("teachers")
             .update({
@@ -45,7 +79,6 @@ export default function TeacherEditPage() {
                 gender: teacher.gender || null,
                 blood_group: teacher.blood_group || null,
                 phone: teacher.phone || null,
-                email: teacher.email || null,
                 city: teacher.city || null,
                 state: teacher.state || null,
                 country: teacher.country || null,
@@ -63,14 +96,18 @@ export default function TeacherEditPage() {
                 // Education & Experience
                 highest_qualification:
                     teacher.highest_qualification || null,
-                specialization: teacher.specialization || null,
+                specialization:
+                    teacher.specialization || null,
                 total_years_experience:
                     teacher.total_years_experience ?? null,
 
                 // Salary Information
-                basic_salary: teacher.basic_salary ?? null,
-                pf_number: teacher.pf_number || null,
-                tax_id: teacher.tax_id || null,
+                basic_salary:
+                    teacher.basic_salary ?? null,
+                pf_number:
+                    teacher.pf_number || null,
+                tax_id:
+                    teacher.tax_id || null,
 
                 // Emergency Contact
                 emergency_contact_name:
@@ -85,13 +122,33 @@ export default function TeacherEditPage() {
             .eq("id", teacherId);
 
         if (error) {
-            console.error("Error updating teacher:", error);
-            alert("Failed to save teacher profile.");
+            console.error(
+                "Error updating teacher:",
+                error
+            );
+
+            alert(
+                "Failed to save teacher profile."
+            );
             return;
         }
 
-        alert("Teacher profile updated successfully.");
+        alert(
+            "Teacher profile updated successfully."
+        );
+
+        setOriginalEmail(newEmail);
+    } catch (error) {
+        console.error(
+            "Error saving teacher profile:",
+            error
+        );
+
+        alert(
+            "Failed to save teacher profile."
+        );
     }
+}
 
     return (
         <div className="p-6">

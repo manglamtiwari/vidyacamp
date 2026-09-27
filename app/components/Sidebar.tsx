@@ -10,6 +10,7 @@ import {
     PartyPopper,
     Settings,
     LogOut,
+    UserCircle,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -154,6 +155,17 @@ export default function Sidebar() {
                     <LayoutDashboard size={20} />
                     Dashboard
                 </Link>
+
+                {/* Profile - TEACHER ONLY */}
+                {userRole === "teacher" && (
+                    <Link
+                        href="/teacher/profile"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-50"
+                    >
+                        <UserCircle size={20} />
+                        Profile
+                    </Link>
+                )}
 
                 {/* People - ADMIN ONLY */}
                 {userRole === "admin" && (

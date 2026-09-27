@@ -103,10 +103,6 @@ export default function AdminUsersPage() {
     const [studentClassId, setStudentClassId] = useState("");
     const [studentSectionId, setStudentSectionId] = useState("");
 
-    // =========================================================
-    // ADMIN ACCESS
-    // =========================================================
-
     useEffect(() => {
         async function checkAdminAccess() {
             const role = await getUserRole();
@@ -127,10 +123,6 @@ export default function AdminUsersPage() {
 
         checkAdminAccess();
     }, [router]);
-
-    // =========================================================
-    // LOAD PEOPLE + CURRENT YEAR CLASSES/SECTIONS
-    // =========================================================
 
     async function getAdminSchoolId() {
         const {
@@ -251,10 +243,6 @@ export default function AdminUsersPage() {
         }
     }, [isCheckingAccess]);
 
-    // =========================================================
-    // TEACHER FORM
-    // =========================================================
-
     function resetTeacherForm() {
         setTeacherName("");
         setEmployeeId("");
@@ -264,85 +252,6 @@ export default function AdminUsersPage() {
         setEditingTeacherId(null);
         setShowTeacherForm(false);
     }
-
-    // async function handleSaveTeacher(
-    //     e: React.FormEvent<HTMLFormElement>
-    // ) {
-    //     e.preventDefault();
-
-    //     if (!teacherName.trim()) {
-    //         alert("Teacher name cannot be empty.");
-    //         return;
-    //     }
-
-    //     const teacherPhoneError = validatePhone(teacherPhone, "Teacher phone number");
-    //     if (teacherPhoneError) {
-    //         alert(teacherPhoneError);
-    //         return;
-    //     }
-
-    //     const teacherEmailError = validateEmail(teacherEmail, "Teacher email");
-    //     if (teacherEmailError) {
-    //         alert(teacherEmailError);
-    //         return;
-    //     }
-
-    //     setIsSaving(true);
-
-    //     try {
-    //         if (editingTeacherId) {
-    //             const { error } = await supabase
-    //                 .from("teachers")
-    //                 .update({
-    //                     employee_id: employeeId.trim() || null,
-    //                     name: teacherName.trim(),
-    //                     phone: teacherPhone.trim() || null,
-    //                     email: teacherEmail.trim() || null,
-    //                 })
-    //                 .eq("id", editingTeacherId);
-
-    //             if (error) throw error;
-
-    //             alert("Teacher updated successfully.");
-    //             resetTeacherForm();
-    //             await loadPeople();
-    //             return;
-    //         }
-
-    //         const schoolId = await getAdminSchoolId();
-
-    //         const { error } = await supabase
-    //             .from("teachers")
-    //             .insert({
-    //                 school_id: schoolId,
-    //                 employee_id: employeeId.trim() || null,
-    //                 name: teacherName.trim(),
-    //                 phone: teacherPhone.trim() || null,
-    //                 email: teacherEmail.trim() || null,
-    //             });
-
-    //         if (error) {
-    //             if (error.code === "23505") {
-    //                 alert(
-    //                     "This Employee ID is already being used in this school."
-    //                 );
-    //                 return;
-    //             }
-    //             throw error;
-    //         }
-
-    //         alert("Teacher added successfully.");
-    //         resetTeacherForm();
-    //         await loadPeople();
-    //     } catch (error) {
-    //         console.error("Could not save teacher:", error);
-    //         alert("Could not save teacher. Please try again.");
-    //     } finally {
-    //         setIsSaving(false);
-    //     }
-    // }
-
-    // new handle teacher
 
     async function handleSaveTeacher(
         e: React.FormEvent<HTMLFormElement>
@@ -381,8 +290,6 @@ export default function AdminUsersPage() {
                     })
                     .eq("id", editingTeacherId);
 
-                // if (error) throw error;
-
                 if (error) {
                     if (error.code === "23505") {
                         alert(
@@ -399,6 +306,7 @@ export default function AdminUsersPage() {
                 return;
             }
 
+         
             const response = await fetch("/api/admin/invite-teacher", {
                 method: "POST",
                 headers: {
@@ -499,18 +407,6 @@ export default function AdminUsersPage() {
         }
     }
 
-    function handleEditTeacher(teacher: Teacher) {
-        setEditingTeacherId(teacher.id);
-        setTeacherName(teacher.name);
-        setEmployeeId(teacher.employee_id || "");
-        setTeacherPhone(teacher.phone || "");
-        setTeacherEmail(teacher.email || "");
-        setTeacherDob(teacher.dob || "");
-        setShowTeacherForm(true);
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
     async function handleDeactivateTeacher(teacher: Teacher) {
         const confirmed = window.confirm(
             `Are you sure you want to deactivate ${teacher.name}?`
@@ -554,10 +450,6 @@ export default function AdminUsersPage() {
         alert("Teacher has been reactivated.");
         await loadPeople();
     }
-
-    // =========================================================
-    // STUDENT FORM
-    // =========================================================
 
     function resetStudentForm() {
         setAdmissionNo("");
@@ -754,10 +646,6 @@ export default function AdminUsersPage() {
         await loadPeople();
     }
 
-    // =========================================================
-    // ACCESS SCREEN
-    // =========================================================
-
     if (isCheckingAccess) {
         return (
             <div className="bg-white rounded-xl shadow-sm p-10 text-center">
@@ -769,7 +657,7 @@ export default function AdminUsersPage() {
 
     return (
         <div>
-            {/* Header */}
+            { }
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">People</h1>
@@ -797,7 +685,7 @@ export default function AdminUsersPage() {
                 )}
             </div>
 
-            {/* Tabs */}
+            { }
             <div className="flex gap-2 mt-8 border-b">
                 <button
                     type="button"
@@ -830,9 +718,7 @@ export default function AdminUsersPage() {
                 </button>
             </div>
 
-            {/* =====================================================
-                TEACHER FORM
-            ====================================================== */}
+            { }
             {showTeacherForm && activeTab === "teachers" && (
                 <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
                     <h2 className="text-xl font-semibold">
@@ -891,7 +777,6 @@ export default function AdminUsersPage() {
                                     required
                                 />
                             </div>
-
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
@@ -954,9 +839,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
-            {/* =====================================================
-                STUDENT FORM
-            ====================================================== */}
+            { }
             {showStudentForm && activeTab === "students" && (
                 <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
                     <h2 className="text-xl font-semibold">
@@ -1171,9 +1054,7 @@ export default function AdminUsersPage() {
                 </div>
             )}
 
-            {/* =====================================================
-                LIST
-            ====================================================== */}
+            { }
             {!showTeacherForm && !showStudentForm && (
                 <>
                     {isLoading ? (
@@ -1185,20 +1066,19 @@ export default function AdminUsersPage() {
                         </div>
                     ) : (
                         <div className="bg-white rounded-xl shadow-sm mt-6 overflow-hidden">
-                            {/* <div className="p-4 border-b"> */}
+                            { }
                             {activeTab === "teachers" && (
                                 <div className="p-4 border-b">
                                     <p className="text-sm font-medium text-gray-600 mb-3">
                                         Filter Teachers
                                     </p>
-                                    {/* <div className="flex flex-wrap gap-3"> */}
+                                    { }
                                     <div className="flex flex-wrap items-center gap-3">
                                         <input
                                             type="text"
                                             placeholder="Search name, employee ID, phone or email..."
                                             value={teacherSearch}
                                             onChange={(e) => setTeacherSearch(e.target.value)}
-                                            // className="border rounded-md px-3 py-2 text-sm"
                                             className="border rounded-md px-3 py-2 text-sm flex-1 min-w-[280px]"
                                         />
 
@@ -1275,7 +1155,6 @@ export default function AdminUsersPage() {
                                             placeholder="Search admission no., name, email, phone or parent..."
                                             value={studentSearch}
                                             onChange={(e) => setStudentSearch(e.target.value)}
-                                            // className="border rounded-md px-3 py-2 text-sm"
                                             className="border rounded-md px-3 py-2 text-sm flex-1 min-w-[280px]"
                                         />
 
@@ -1319,17 +1198,7 @@ export default function AdminUsersPage() {
                                             className="border rounded-md px-3 py-2 text-sm bg-white"
                                         >
                                             <option value="all">All Sections</option>
-                                            {/* {sections
-                                                .filter(
-                                                    (section) =>
-                                                        studentClassFilter === "all" ||
-                                                        section.class_id === studentClassFilter
-                                                )
-                                                .map((section) => (
-                                                    <option key={section.id} value={section.id}>
-                                                        {section.name}
-                                                    </option>
-                                                ))} */}
+                                            { }
                                             {Array.from(
                                                 new Map(
                                                     sections
@@ -1430,7 +1299,7 @@ export default function AdminUsersPage() {
                                     </div>
                                 </div>
                             )}
-                            {/* </div> */}
+                            { }
                             {activeTab === "teachers" ? (
                                 teachers.filter((teacher) => {
                                     const search = teacherSearch.toLowerCase().trim();
@@ -1471,20 +1340,8 @@ export default function AdminUsersPage() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {/* {teachers.map((teacher) => ( */}
+                                                { }
                                                 {teachers
-                                                    // .filter((teacher) => {
-                                                    //     const search = teacherSearch.toLowerCase().trim();
-
-                                                    //     if (!search) return true;
-
-                                                    //     return (
-                                                    //         teacher.name.toLowerCase().includes(search) ||
-                                                    //         (teacher.employee_id || "").toLowerCase().includes(search) ||
-                                                    //         (teacher.phone || "").toLowerCase().includes(search) ||
-                                                    //         (teacher.email || "").toLowerCase().includes(search)
-                                                    //     );
-                                                    // })
                                                     .filter((teacher) => {
                                                         const search = teacherSearch.toLowerCase().trim();
 
@@ -1541,7 +1398,7 @@ export default function AdminUsersPage() {
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleEditTeacher(teacher)
+                                                                            router.push(`/admin/teachers/${teacher.id}/edit`)
                                                                         }
                                                                         className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                                     >
@@ -1668,7 +1525,7 @@ export default function AdminUsersPage() {
                                         </thead>
 
                                         <tbody>
-                                            {/* {students.map((student) => { */}
+                                            { }
                                             {students
                                                 .filter((student) => {
                                                     const search = studentSearch.toLowerCase().trim();
@@ -1694,10 +1551,6 @@ export default function AdminUsersPage() {
                                                     const matchesClass =
                                                         studentClassFilter === "all" ||
                                                         student.class_id === studentClassFilter;
-
-                                                    // const matchesSection =
-                                                    //     studentSectionFilter === "all" ||
-                                                    //     student.section_id === studentSectionFilter;
 
                                                     const matchesSection =
                                                         studentSectionFilter === "all" ||
