@@ -16,33 +16,16 @@ type Teacher = {
     is_active: boolean;
 };
 
-// type Student = {
-//     id: string;
-//     admission_no: string;
-//     name: string;
-//     student_email: string | null;
-//     student_phone: string | null;
-//     parent_name: string | null;
-//     parent_phone: string | null;
-//     parent_email: string | null;
-//     date_of_birth: string | null;
-//     gender: string | null;
-//     class_id: string | null;
-//     section_id: string | null;
-//     is_active: boolean;
-// };
-
-
 type Student = {
     id: string;
     admission_no: string;
+
+    // student name is stored in the "name" field in the database
     name: string;
 
     registration_no: string | null;
-    first_name: string | null;
-    middle_name: string | null;
-    last_name: string | null;
-    full_name: string | null;
+    aadhaar_number: string | null;
+    apaar_id: string | null;
 
     student_email: string | null;
     student_phone: string | null;
@@ -146,18 +129,33 @@ export default function AdminUsersPage() {
     const [studentName, setStudentName] = useState("");
     const [studentEmail, setStudentEmail] = useState("");
     const [studentPhone, setStudentPhone] = useState("");
+    const [studentAadharNumber, setStudentAadharNumber] = useState("");
+    const [studentApaarIdNumber, setStudentApaarIdNumber] = useState("");
+
+
     const [parentName, setParentName] = useState("");
     const [parentPhone, setParentPhone] = useState("");
     const [parentEmail, setParentEmail] = useState("");
+    const [fatherName, setFatherName] = useState("");
+    const [fatherPhone, setFatherPhone] = useState("");
+    const [fatherAlternatePhone, setFatherAlternatePhone] = useState("");
+    const [fatherEmail, setFatherEmail] = useState("");
+    const [fatherOccupation, setFatherOccupation] = useState("");
+    const [fatherQualification, setFatherQualification] = useState("");
+    const [motherName, setMotherName] = useState("");
+    const [motherPhone, setMotherPhone] = useState("");
+    const [motherAlternatePhone, setMotherAlternatePhone] = useState("");
+    const [motherEmail, setMotherEmail] = useState("");
+    const [motherOccupation, setMotherOccupation] = useState("");
+    const [motherQualification, setMotherQualification] = useState("");
+
+
     const [dateOfBirth, setDateOfBirth] = useState("");
     const [gender, setGender] = useState("");
     const [studentClassId, setStudentClassId] = useState("");
     const [studentSectionId, setStudentSectionId] = useState("");
 
     const [registrationNo, setRegistrationNo] = useState("");
-    const [firstName, setFirstName] = useState("");
-    const [middleName, setMiddleName] = useState("");
-    const [lastName, setLastName] = useState("");
     const [bloodGroup, setBloodGroup] = useState("");
     const [nationality, setNationality] = useState("");
     const [religion, setReligion] = useState("");
@@ -173,6 +171,7 @@ export default function AdminUsersPage() {
     const [previousSchoolClass, setPreviousSchoolClass] = useState("");
     const [previousSchoolBoard, setPreviousSchoolBoard] = useState("");
     const [previousSchoolTcNo, setPreviousSchoolTcNo] = useState("");
+
 
 
 
@@ -241,28 +240,14 @@ export default function AdminUsersPage() {
                     .eq("school_id", schoolId)
                     .order("name"),
 
-                // supabase
-                //     .from("students")
-                //     .select(
-                //         "id, admission_no, name, student_email, student_phone, parent_name, parent_phone, parent_email, date_of_birth, gender, class_id, section_id, is_active"
-                //     )
-                //     .eq("school_id", schoolId)
-                //     .order("name"),
-
-
-
                 supabase
                     .from("students")
                     .select(
                         `
         id,
-        admission_no,
         name,
+        admission_no,
         registration_no,
-        first_name,
-        middle_name,
-        last_name,
-        full_name,
         student_email,
         student_phone,
         parent_name,
@@ -277,13 +262,15 @@ export default function AdminUsersPage() {
         caste,
         mother_tongue,
         photo_url,
+        aadhaar_number,
+apaar_id,
         academic_year_id,
         roll_number,
         class_id,
         section_id,
         house_id,
         stream,
-        elective_subjects,
+         elective_subjects,
         status,
         admission_date,
         admission_type,
@@ -574,25 +561,8 @@ export default function AdminUsersPage() {
         await loadPeople();
     }
 
-    // function resetStudentForm() {
-    //     setAdmissionNo("");
-    //     setStudentName("");
-    //     setStudentEmail("");
-    //     setStudentPhone("");
-    //     setParentName("");
-    //     setParentPhone("");
-    //     setParentEmail("");
-    //     setDateOfBirth("");
-    //     setGender("");
-    //     setStudentClassId("");
-    //     setStudentSectionId("");
-    //     setEditingStudentId(null);
-    //     setShowStudentForm(false);
-    // }
-
-
-
     function resetStudentForm() {
+
         setAdmissionNo("");
         setStudentName("");
         setStudentEmail("");
@@ -606,15 +576,15 @@ export default function AdminUsersPage() {
         setStudentSectionId("");
 
         setRegistrationNo("");
-        setFirstName("");
-        setMiddleName("");
-        setLastName("");
         setBloodGroup("");
         setNationality("");
         setReligion("");
         setCategory("");
         setCaste("");
         setMotherTongue("");
+        setStudentAadharNumber("");
+        setStudentApaarIdNumber("");
+
         setRollNumber("");
         setStream("");
         setStatus("active");
@@ -624,6 +594,23 @@ export default function AdminUsersPage() {
         setPreviousSchoolClass("");
         setPreviousSchoolBoard("");
         setPreviousSchoolTcNo("");
+
+
+        // Father Information
+        setFatherName("");
+        setFatherPhone("");
+        setFatherAlternatePhone("");
+        setFatherEmail("");
+        setFatherOccupation("");
+        setFatherQualification("");
+
+        // Mother Information
+        setMotherName("");
+        setMotherPhone("");
+        setMotherAlternatePhone("");
+        setMotherEmail("");
+        setMotherOccupation("");
+        setMotherQualification("");
 
         setEditingStudentId(null);
         setShowStudentForm(false);
@@ -675,21 +662,6 @@ export default function AdminUsersPage() {
             if (editingStudentId) {
                 const { error } = await supabase
                     .from("students")
-                    // .update({
-                    //     admission_no: admissionNo.trim(),
-                    //     name: studentName.trim(),
-                    //     student_email: studentEmail.trim() || null,
-                    //     student_phone: studentPhone.trim() || null,
-                    //     parent_name: parentName.trim() || null,
-                    //     parent_phone: parentPhone.trim() || null,
-                    //     parent_email: parentEmail.trim() || null,
-                    //     date_of_birth: dateOfBirth || null,
-                    //     gender: gender || null,
-                    //     class_id: studentClassId || null,
-                    //     section_id: studentSectionId || null,
-                    // })
-
-
                     .update({
                         // Existing fields
                         admission_no: admissionNo.trim(),
@@ -706,14 +678,8 @@ export default function AdminUsersPage() {
 
                         // Basic Information
                         registration_no: registrationNo.trim() || null,
-                        first_name: firstName.trim() || null,
-                        middle_name: middleName.trim() || null,
-                        last_name: lastName.trim() || null,
-                        full_name:
-                            [firstName, middleName, lastName]
-                                .map((value) => value.trim())
-                                .filter(Boolean)
-                                .join(" ") || studentName.trim() || null,
+                        aadhaar_number: studentAadharNumber.trim() || null,
+                        apaar_id: studentApaarIdNumber.trim() || null,
                         blood_group: bloodGroup || null,
                         nationality: nationality.trim() || null,
                         religion: religion.trim() || null,
@@ -737,6 +703,27 @@ export default function AdminUsersPage() {
                             previousSchoolBoard.trim() || null,
                         previous_school_tc_no:
                             previousSchoolTcNo.trim() || null,
+
+                        // Father Information
+                        father_name: fatherName.trim() || null,
+                        father_phone: fatherPhone.trim() || null,
+                        father_alternate_phone:
+                            fatherAlternatePhone.trim() || null,
+                        father_email: fatherEmail.trim() || null,
+                        father_occupation: fatherOccupation.trim() || null,
+                        father_qualification: fatherQualification.trim() || null,
+
+
+                        // Mother Information
+                        mother_name: motherName.trim() || null,
+                        mother_phone: motherPhone.trim() || null,
+                        mother_alternate_phone:
+                            motherAlternatePhone.trim() || null,
+                        mother_email: motherEmail.trim() || null,
+                        mother_occupation: motherOccupation.trim() || null,
+                        mother_qualification: motherQualification.trim() || null,
+
+
                     })
                     .eq("id", editingStudentId);
 
@@ -760,21 +747,6 @@ export default function AdminUsersPage() {
 
             const { error } = await supabase
                 .from("students")
-                // .insert({
-                //     school_id: schoolId,
-                //     admission_no: admissionNo.trim(),
-                //     name: studentName.trim(),
-                //     student_email: studentEmail.trim() || null,
-                //     student_phone: studentPhone.trim() || null,
-                //     parent_name: parentName.trim() || null,
-                //     parent_phone: parentPhone.trim() || null,
-                //     parent_email: parentEmail.trim() || null,
-                //     date_of_birth: dateOfBirth || null,
-                //     gender: gender || null,
-                //     class_id: studentClassId || null,
-                //     section_id: studentSectionId || null,
-                //     is_active: true,
-                // });
                 .insert({
                     school_id: schoolId,
 
@@ -793,14 +765,8 @@ export default function AdminUsersPage() {
 
                     // Basic Information
                     registration_no: registrationNo.trim() || null,
-                    first_name: firstName.trim() || null,
-                    middle_name: middleName.trim() || null,
-                    last_name: lastName.trim() || null,
-                    full_name:
-                        [firstName, middleName, lastName]
-                            .map((value) => value.trim())
-                            .filter(Boolean)
-                            .join(" ") || studentName.trim() || null,
+                    aadhaar_number: studentAadharNumber.trim() || null,
+                    apaar_id: studentApaarIdNumber.trim() || null,
                     blood_group: bloodGroup || null,
                     nationality: nationality.trim() || null,
                     religion: religion.trim() || null,
@@ -824,6 +790,27 @@ export default function AdminUsersPage() {
                         previousSchoolBoard.trim() || null,
                     previous_school_tc_no:
                         previousSchoolTcNo.trim() || null,
+
+
+                    // Father Information
+                    father_name: fatherName.trim() || null,
+                    father_phone: fatherPhone.trim() || null,
+                    father_alternate_phone:
+                        fatherAlternatePhone.trim() || null,
+                    father_email: fatherEmail.trim() || null,
+                    father_occupation: fatherOccupation.trim() || null,
+                    father_qualification: fatherQualification.trim() || null,
+
+
+                    // Mother Information
+                    mother_name: motherName.trim() || null,
+                    mother_phone: motherPhone.trim() || null,
+                    mother_alternate_phone:
+                        motherAlternatePhone.trim() || null,
+                    mother_email: motherEmail.trim() || null,
+                    mother_occupation: motherOccupation.trim() || null,
+                    mother_qualification: motherQualification.trim() || null,
+
                 });
 
             if (error) {
@@ -1116,11 +1103,28 @@ export default function AdminUsersPage() {
                     </p>
 
                     <form onSubmit={handleSaveStudent} className="mt-6">
+
+                        {/* ===================================================== */}
+                        {/* BASIC INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Basic Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Basic identity and personal information of the student.
+                            </p>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            {/* Admission No. */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Admission No. <span className="text-red-500">*</span>
                                 </label>
+
                                 <input
                                     type="text"
                                     value={admissionNo}
@@ -1131,10 +1135,28 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* Registration No. */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Registration No.
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={registrationNo}
+                                    onChange={(e) => setRegistrationNo(e.target.value)}
+                                    placeholder="e.g. REG-1001"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+
+                            {/* Student Name */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Student Name <span className="text-red-500">*</span>
                                 </label>
+
                                 <input
                                     type="text"
                                     value={studentName}
@@ -1145,10 +1167,192 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* Gender */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Gender
+                                </label>
+
+                                <select
+                                    value={gender}
+                                    onChange={(e) => setGender(e.target.value)}
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            {/* Date of Birth */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Date of Birth
+                                </label>
+
+                                <input
+                                    type="date"
+                                    value={dateOfBirth}
+                                    onChange={(e) => setDateOfBirth(e.target.value)}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Blood Group */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Blood Group
+                                </label>
+
+                                <select
+                                    value={bloodGroup}
+                                    onChange={(e) => setBloodGroup(e.target.value)}
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Select blood group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+
+                            {/* Nationality */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Nationality
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={nationality}
+                                    onChange={(e) => setNationality(e.target.value)}
+                                    placeholder="e.g. Indian"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Religion */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Religion
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={religion}
+                                    onChange={(e) => setReligion(e.target.value)}
+                                    placeholder="e.g. Hindu"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Category
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    placeholder="e.g. General"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Caste */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Caste
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={caste}
+                                    onChange={(e) => setCaste(e.target.value)}
+                                    placeholder="Enter caste"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Tongue */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Tongue
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={motherTongue}
+                                    onChange={(e) => setMotherTongue(e.target.value)}
+                                    placeholder="e.g. Hindi"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Aadhaar Number */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Aadhaar Number
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={studentAadharNumber}
+                                    onChange={(e) => setStudentAadharNumber(e.target.value)}
+                                    placeholder="Enter Aadhaar number"
+                                    maxLength={20}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* APAAR ID */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    APAAR ID
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={studentApaarIdNumber}
+                                    onChange={(e) => setStudentApaarIdNumber(e.target.value)}
+                                    placeholder="Enter APAAR ID"
+                                    maxLength={50}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                        </div>
+
+
+                        {/* ===================================================== */}
+                        {/* CONTACT INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="border-t pt-6 mt-8 mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Contact Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Contact information of the student.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            {/* Student Email */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Student Email
                                 </label>
+
                                 <input
                                     type="email"
                                     value={studentEmail}
@@ -1158,10 +1362,12 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* Student Phone */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Student Phone
                                 </label>
+
                                 <input
                                     type="tel"
                                     inputMode="numeric"
@@ -1176,10 +1382,30 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                        </div>
+
+
+                        {/* ===================================================== */}
+                        {/* PARENT / GUARDIAN INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="border-t pt-6 mt-8 mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Parent / Guardian Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Primary parent or guardian contact information.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            {/* Parent Name */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Parent Name
                                 </label>
+
                                 <input
                                     type="text"
                                     value={parentName}
@@ -1189,10 +1415,12 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* Parent Phone */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Parent Phone
                                 </label>
+
                                 <input
                                     type="tel"
                                     inputMode="numeric"
@@ -1207,10 +1435,12 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* Parent Email */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Parent Email
                                 </label>
+
                                 <input
                                     type="email"
                                     value={parentEmail}
@@ -1220,38 +1450,390 @@ export default function AdminUsersPage() {
                                 />
                             </div>
 
+                            {/* ===================================================== */}
+                            {/* FATHER INFORMATION */}
+                            {/* ===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1">
+                                <h4 className="text-base font-semibold text-gray-800">
+                                    Father Information
+                                </h4>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Father's contact and professional information.
+                                </p>
+                            </div>
+
+                            {/* Father Name */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Date of Birth
+                                    Father Name
                                 </label>
+
                                 <input
-                                    type="date"
-                                    value={dateOfBirth}
-                                    onChange={(e) => setDateOfBirth(e.target.value)}
+                                    type="text"
+                                    value={fatherName}
+                                    onChange={(e) => setFatherName(e.target.value)}
+                                    placeholder="e.g. Rajesh Sharma"
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
 
+                            {/* Father Phone */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Gender
+                                    Father Phone
                                 </label>
+
+                                <input
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={fatherPhone}
+                                    onChange={(e) =>
+                                        setFatherPhone(
+                                            e.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="e.g. 9876543210"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Father Alternate Phone */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Father Alternate Phone
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={fatherAlternatePhone}
+                                    onChange={(e) =>
+                                        setFatherAlternatePhone(
+                                            e.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="e.g. 9876543210"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Father Email */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Father Email
+                                </label>
+
+                                <input
+                                    type="email"
+                                    value={fatherEmail}
+                                    onChange={(e) => setFatherEmail(e.target.value)}
+                                    placeholder="e.g. father@email.com"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Father Occupation */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Father Occupation
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={fatherOccupation}
+                                    onChange={(e) => setFatherOccupation(e.target.value)}
+                                    placeholder="e.g. Engineer"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Father Qualification */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Father Qualification
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={fatherQualification}
+                                    onChange={(e) =>
+                                        setFatherQualification(e.target.value)
+                                    }
+                                    placeholder="e.g. B.Tech"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+
+                            {/* ===================================================== */}
+                            {/* MOTHER INFORMATION */}
+                            {/* ===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1">
+                                <h4 className="text-base font-semibold text-gray-800">
+                                    Mother Information
+                                </h4>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Mother's contact and professional information.
+                                </p>
+                            </div>
+
+                            {/* Mother Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={motherName}
+                                    onChange={(e) => setMotherName(e.target.value)}
+                                    placeholder="e.g. Priya Sharma"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Phone */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Phone
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={motherPhone}
+                                    onChange={(e) =>
+                                        setMotherPhone(
+                                            e.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="e.g. 9876543210"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Alternate Phone */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Alternate Phone
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={motherAlternatePhone}
+                                    onChange={(e) =>
+                                        setMotherAlternatePhone(
+                                            e.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="e.g. 9876543210"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Email */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Email
+                                </label>
+
+                                <input
+                                    type="email"
+                                    value={motherEmail}
+                                    onChange={(e) => setMotherEmail(e.target.value)}
+                                    placeholder="e.g. mother@email.com"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Occupation */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Occupation
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={motherOccupation}
+                                    onChange={(e) => setMotherOccupation(e.target.value)}
+                                    placeholder="e.g. Teacher"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Qualification */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Mother Qualification
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={motherQualification}
+                                    onChange={(e) =>
+                                        setMotherQualification(e.target.value)
+                                    }
+                                    placeholder="e.g. M.A."
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+
+                        </div>
+
+
+
+
+
+                        {/* ===================================================== */}
+                        {/* ADMISSION & ACADEMIC INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="border-t pt-6 mt-8 mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Admission & Academic Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Academic placement and admission-related information.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
+                            {/* Roll Number */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Roll Number
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={rollNumber}
+                                    onChange={(e) => setRollNumber(e.target.value)}
+                                    placeholder="e.g. 101"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Admission Date */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Admission Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    value={admissionDate}
+                                    onChange={(e) => setAdmissionDate(e.target.value)}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Admission Type */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Admission Type
+                                </label>
+
                                 <select
-                                    value={gender}
-                                    onChange={(e) => setGender(e.target.value)}
+                                    value={admissionType}
+                                    onChange={(e) => setAdmissionType(e.target.value)}
                                     className="w-full border rounded-md p-3 bg-white"
                                 >
-                                    <option value="">Select gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
+                                    <option value="">Select admission type</option>
+                                    <option value="New">New</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Re-admission">Re-admission</option>
                                 </select>
                             </div>
 
+                            {/* Stream */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Stream
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={stream}
+                                    onChange={(e) => setStream(e.target.value)}
+                                    placeholder="e.g. Science"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolName}
+                                    onChange={(e) => setPreviousSchoolName(e.target.value)}
+                                    placeholder="Previous school name"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Class */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Class
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolClass}
+                                    onChange={(e) => setPreviousSchoolClass(e.target.value)}
+                                    placeholder="e.g. 8th"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Board */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Board
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolBoard}
+                                    onChange={(e) => setPreviousSchoolBoard(e.target.value)}
+                                    placeholder="e.g. CBSE"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School TC No. */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School TC No.
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolTcNo}
+                                    onChange={(e) => setPreviousSchoolTcNo(e.target.value)}
+                                    placeholder="Transfer certificate number"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+
+
+                            {/* Class */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Class
                                 </label>
+
                                 <select
                                     value={studentClassId}
                                     onChange={(e) => {
@@ -1261,6 +1843,7 @@ export default function AdminUsersPage() {
                                     className="w-full border rounded-md p-3 bg-white"
                                 >
                                     <option value="">Not assigned</option>
+
                                     {classes.map((schoolClass) => (
                                         <option
                                             key={schoolClass.id}
@@ -1272,27 +1855,44 @@ export default function AdminUsersPage() {
                                 </select>
                             </div>
 
+                            {/* Section */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
                                     Section
                                 </label>
+
                                 <select
                                     value={studentSectionId}
-                                    onChange={(e) => setStudentSectionId(e.target.value)}
+                                    onChange={(e) =>
+                                        setStudentSectionId(e.target.value)
+                                    }
                                     disabled={!studentClassId}
                                     className="w-full border rounded-md p-3 bg-white disabled:bg-gray-100"
                                 >
                                     <option value="">Not assigned</option>
+
                                     {getSectionsForSelectedClass().map((section) => (
-                                        <option key={section.id} value={section.id}>
+                                        <option
+                                            key={section.id}
+                                            value={section.id}
+                                        >
                                             {section.name}
                                         </option>
                                     ))}
                                 </select>
                             </div>
+
+
+
                         </div>
 
+
+                        {/* ===================================================== */}
+                        {/* FORM ACTIONS */}
+                        {/* ===================================================== */}
+
                         <div className="flex justify-end gap-3 mt-8">
+
                             <button
                                 type="button"
                                 onClick={resetStudentForm}
@@ -1312,8 +1912,15 @@ export default function AdminUsersPage() {
                                         ? "Update Student"
                                         : "Save Student"}
                             </button>
+
                         </div>
+
                     </form>
+
+
+
+
+
                 </div>
             )}
 
