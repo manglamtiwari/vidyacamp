@@ -16,21 +16,72 @@ type Teacher = {
     is_active: boolean;
 };
 
+// type Student = {
+//     id: string;
+//     admission_no: string;
+//     name: string;
+//     student_email: string | null;
+//     student_phone: string | null;
+//     parent_name: string | null;
+//     parent_phone: string | null;
+//     parent_email: string | null;
+//     date_of_birth: string | null;
+//     gender: string | null;
+//     class_id: string | null;
+//     section_id: string | null;
+//     is_active: boolean;
+// };
+
+
 type Student = {
     id: string;
     admission_no: string;
     name: string;
+
+    registration_no: string | null;
+    first_name: string | null;
+    middle_name: string | null;
+    last_name: string | null;
+    full_name: string | null;
+
     student_email: string | null;
     student_phone: string | null;
+
     parent_name: string | null;
     parent_phone: string | null;
     parent_email: string | null;
+
     date_of_birth: string | null;
     gender: string | null;
+
+    blood_group: string | null;
+    nationality: string | null;
+    religion: string | null;
+    category: string | null;
+    caste: string | null;
+    mother_tongue: string | null;
+    photo_url: string | null;
+
+    academic_year_id: string | null;
+    roll_number: string | null;
     class_id: string | null;
     section_id: string | null;
+    house_id: string | null;
+    stream: string | null;
+    elective_subjects: unknown;
+
+    status: string | null;
+
+    admission_date: string | null;
+    admission_type: string | null;
+    previous_school_name: string | null;
+    previous_school_class: string | null;
+    previous_school_board: string | null;
+    previous_school_tc_no: string | null;
+
     is_active: boolean;
 };
+
 
 type SchoolClass = {
     id: string;
@@ -103,6 +154,28 @@ export default function AdminUsersPage() {
     const [studentClassId, setStudentClassId] = useState("");
     const [studentSectionId, setStudentSectionId] = useState("");
 
+    const [registrationNo, setRegistrationNo] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [middleName, setMiddleName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [bloodGroup, setBloodGroup] = useState("");
+    const [nationality, setNationality] = useState("");
+    const [religion, setReligion] = useState("");
+    const [category, setCategory] = useState("");
+    const [caste, setCaste] = useState("");
+    const [motherTongue, setMotherTongue] = useState("");
+    const [rollNumber, setRollNumber] = useState("");
+    const [stream, setStream] = useState("");
+    const [status, setStatus] = useState("active");
+    const [admissionDate, setAdmissionDate] = useState("");
+    const [admissionType, setAdmissionType] = useState("");
+    const [previousSchoolName, setPreviousSchoolName] = useState("");
+    const [previousSchoolClass, setPreviousSchoolClass] = useState("");
+    const [previousSchoolBoard, setPreviousSchoolBoard] = useState("");
+    const [previousSchoolTcNo, setPreviousSchoolTcNo] = useState("");
+
+
+
     useEffect(() => {
         async function checkAdminAccess() {
             const role = await getUserRole();
@@ -168,13 +241,63 @@ export default function AdminUsersPage() {
                     .eq("school_id", schoolId)
                     .order("name"),
 
+                // supabase
+                //     .from("students")
+                //     .select(
+                //         "id, admission_no, name, student_email, student_phone, parent_name, parent_phone, parent_email, date_of_birth, gender, class_id, section_id, is_active"
+                //     )
+                //     .eq("school_id", schoolId)
+                //     .order("name"),
+
+
+
                 supabase
                     .from("students")
                     .select(
-                        "id, admission_no, name, student_email, student_phone, parent_name, parent_phone, parent_email, date_of_birth, gender, class_id, section_id, is_active"
+                        `
+        id,
+        admission_no,
+        name,
+        registration_no,
+        first_name,
+        middle_name,
+        last_name,
+        full_name,
+        student_email,
+        student_phone,
+        parent_name,
+        parent_phone,
+        parent_email,
+        date_of_birth,
+        gender,
+        blood_group,
+        nationality,
+        religion,
+        category,
+        caste,
+        mother_tongue,
+        photo_url,
+        academic_year_id,
+        roll_number,
+        class_id,
+        section_id,
+        house_id,
+        stream,
+        elective_subjects,
+        status,
+        admission_date,
+        admission_type,
+        previous_school_name,
+        previous_school_class,
+        previous_school_board,
+        previous_school_tc_no,
+        is_active
+        `
                     )
                     .eq("school_id", schoolId)
                     .order("name"),
+
+
 
                 supabase
                     .from("academic_years")
@@ -306,7 +429,7 @@ export default function AdminUsersPage() {
                 return;
             }
 
-         
+
             const response = await fetch("/api/admin/invite-teacher", {
                 method: "POST",
                 headers: {
@@ -451,6 +574,24 @@ export default function AdminUsersPage() {
         await loadPeople();
     }
 
+    // function resetStudentForm() {
+    //     setAdmissionNo("");
+    //     setStudentName("");
+    //     setStudentEmail("");
+    //     setStudentPhone("");
+    //     setParentName("");
+    //     setParentPhone("");
+    //     setParentEmail("");
+    //     setDateOfBirth("");
+    //     setGender("");
+    //     setStudentClassId("");
+    //     setStudentSectionId("");
+    //     setEditingStudentId(null);
+    //     setShowStudentForm(false);
+    // }
+
+
+
     function resetStudentForm() {
         setAdmissionNo("");
         setStudentName("");
@@ -463,9 +604,31 @@ export default function AdminUsersPage() {
         setGender("");
         setStudentClassId("");
         setStudentSectionId("");
+
+        setRegistrationNo("");
+        setFirstName("");
+        setMiddleName("");
+        setLastName("");
+        setBloodGroup("");
+        setNationality("");
+        setReligion("");
+        setCategory("");
+        setCaste("");
+        setMotherTongue("");
+        setRollNumber("");
+        setStream("");
+        setStatus("active");
+        setAdmissionDate("");
+        setAdmissionType("");
+        setPreviousSchoolName("");
+        setPreviousSchoolClass("");
+        setPreviousSchoolBoard("");
+        setPreviousSchoolTcNo("");
+
         setEditingStudentId(null);
         setShowStudentForm(false);
     }
+
 
     function getSectionsForSelectedClass() {
         return sections.filter(
@@ -512,7 +675,23 @@ export default function AdminUsersPage() {
             if (editingStudentId) {
                 const { error } = await supabase
                     .from("students")
+                    // .update({
+                    //     admission_no: admissionNo.trim(),
+                    //     name: studentName.trim(),
+                    //     student_email: studentEmail.trim() || null,
+                    //     student_phone: studentPhone.trim() || null,
+                    //     parent_name: parentName.trim() || null,
+                    //     parent_phone: parentPhone.trim() || null,
+                    //     parent_email: parentEmail.trim() || null,
+                    //     date_of_birth: dateOfBirth || null,
+                    //     gender: gender || null,
+                    //     class_id: studentClassId || null,
+                    //     section_id: studentSectionId || null,
+                    // })
+
+
                     .update({
+                        // Existing fields
                         admission_no: admissionNo.trim(),
                         name: studentName.trim(),
                         student_email: studentEmail.trim() || null,
@@ -524,6 +703,40 @@ export default function AdminUsersPage() {
                         gender: gender || null,
                         class_id: studentClassId || null,
                         section_id: studentSectionId || null,
+
+                        // Basic Information
+                        registration_no: registrationNo.trim() || null,
+                        first_name: firstName.trim() || null,
+                        middle_name: middleName.trim() || null,
+                        last_name: lastName.trim() || null,
+                        full_name:
+                            [firstName, middleName, lastName]
+                                .map((value) => value.trim())
+                                .filter(Boolean)
+                                .join(" ") || studentName.trim() || null,
+                        blood_group: bloodGroup || null,
+                        nationality: nationality.trim() || null,
+                        religion: religion.trim() || null,
+                        category: category.trim() || null,
+                        caste: caste.trim() || null,
+                        mother_tongue: motherTongue.trim() || null,
+
+                        // Academic Information
+                        roll_number: rollNumber.trim() || null,
+                        stream: stream.trim() || null,
+                        status: status || "active",
+
+                        // Admission Information
+                        admission_date: admissionDate || null,
+                        admission_type: admissionType || null,
+                        previous_school_name:
+                            previousSchoolName.trim() || null,
+                        previous_school_class:
+                            previousSchoolClass.trim() || null,
+                        previous_school_board:
+                            previousSchoolBoard.trim() || null,
+                        previous_school_tc_no:
+                            previousSchoolTcNo.trim() || null,
                     })
                     .eq("id", editingStudentId);
 
@@ -547,8 +760,25 @@ export default function AdminUsersPage() {
 
             const { error } = await supabase
                 .from("students")
+                // .insert({
+                //     school_id: schoolId,
+                //     admission_no: admissionNo.trim(),
+                //     name: studentName.trim(),
+                //     student_email: studentEmail.trim() || null,
+                //     student_phone: studentPhone.trim() || null,
+                //     parent_name: parentName.trim() || null,
+                //     parent_phone: parentPhone.trim() || null,
+                //     parent_email: parentEmail.trim() || null,
+                //     date_of_birth: dateOfBirth || null,
+                //     gender: gender || null,
+                //     class_id: studentClassId || null,
+                //     section_id: studentSectionId || null,
+                //     is_active: true,
+                // });
                 .insert({
                     school_id: schoolId,
+
+                    // Existing fields
                     admission_no: admissionNo.trim(),
                     name: studentName.trim(),
                     student_email: studentEmail.trim() || null,
@@ -560,7 +790,40 @@ export default function AdminUsersPage() {
                     gender: gender || null,
                     class_id: studentClassId || null,
                     section_id: studentSectionId || null,
-                    is_active: true,
+
+                    // Basic Information
+                    registration_no: registrationNo.trim() || null,
+                    first_name: firstName.trim() || null,
+                    middle_name: middleName.trim() || null,
+                    last_name: lastName.trim() || null,
+                    full_name:
+                        [firstName, middleName, lastName]
+                            .map((value) => value.trim())
+                            .filter(Boolean)
+                            .join(" ") || studentName.trim() || null,
+                    blood_group: bloodGroup || null,
+                    nationality: nationality.trim() || null,
+                    religion: religion.trim() || null,
+                    category: category.trim() || null,
+                    caste: caste.trim() || null,
+                    mother_tongue: motherTongue.trim() || null,
+
+                    // Academic Information
+                    roll_number: rollNumber.trim() || null,
+                    stream: stream.trim() || null,
+                    status: status || "active",
+
+                    // Admission Information
+                    admission_date: admissionDate || null,
+                    admission_type: admissionType || null,
+                    previous_school_name:
+                        previousSchoolName.trim() || null,
+                    previous_school_class:
+                        previousSchoolClass.trim() || null,
+                    previous_school_board:
+                        previousSchoolBoard.trim() || null,
+                    previous_school_tc_no:
+                        previousSchoolTcNo.trim() || null,
                 });
 
             if (error) {
