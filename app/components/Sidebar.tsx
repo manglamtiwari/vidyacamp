@@ -11,6 +11,7 @@ import {
     Settings,
     LogOut,
     UserCircle,
+    Home,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -197,6 +198,17 @@ export default function Sidebar() {
                     >
                         <Settings size={20} />
                         Classes & Sections
+                    </Link>
+                )}
+
+                {/* Houses - ADMIN ONLY */}
+                {userRole === "admin" && (
+                    <Link
+                        href="/houses"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-50"
+                    >
+                        <Home size={20} />
+                        Houses
                     </Link>
                 )}
 

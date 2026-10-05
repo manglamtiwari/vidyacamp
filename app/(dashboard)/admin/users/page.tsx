@@ -77,6 +77,17 @@ type SchoolSection = {
     name: string;
 };
 
+type AcademicYear = {
+    id: string;
+    name: string;
+};
+
+type House = {
+    id: string;
+    name: string;
+    code: string | null;
+};
+
 type Tab = "teachers" | "students";
 
 function formatDateOfBirth(date: string | null) {
@@ -96,6 +107,10 @@ export default function AdminUsersPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [classes, setClasses] = useState<SchoolClass[]>([]);
+
+    const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+    const [houses, setHouses] = useState<House[]>([]);
+
     const [sections, setSections] = useState<SchoolSection[]>([]);
     const [teacherSearch, setTeacherSearch] = useState("");
     const [teacherDobFilter, setTeacherDobFilter] = useState("");
@@ -162,17 +177,19 @@ export default function AdminUsersPage() {
     const [category, setCategory] = useState("");
     const [caste, setCaste] = useState("");
     const [motherTongue, setMotherTongue] = useState("");
+
+    const [academicYearId, setAcademicYearId] = useState("");
+    const [houseId, setHouseId] = useState("");
+    const [electiveSubjects, setElectiveSubjects] = useState("");
+    const [studentStatus, setStudentStatus] = useState("Active");
     const [rollNumber, setRollNumber] = useState("");
     const [stream, setStream] = useState("");
-    const [status, setStatus] = useState("active");
     const [admissionDate, setAdmissionDate] = useState("");
     const [admissionType, setAdmissionType] = useState("");
     const [previousSchoolName, setPreviousSchoolName] = useState("");
     const [previousSchoolClass, setPreviousSchoolClass] = useState("");
     const [previousSchoolBoard, setPreviousSchoolBoard] = useState("");
     const [previousSchoolTcNo, setPreviousSchoolTcNo] = useState("");
-
-
 
 
     useEffect(() => {
@@ -333,6 +350,49 @@ apaar_id,
 
                     sectionData = sectionRows || [];
                 }
+
+
+                //new
+
+                const { data: academicYearsData, error: academicYearsError } =
+                    await supabase
+                        .from("academic_years")
+                        .select("id, name")
+                        .order("start_date", {
+                            ascending: false,
+                        });
+
+                if (academicYearsError) {
+                    console.error(
+                        "Could not load academic years:",
+                        academicYearsError
+                    );
+                } else {
+                    setAcademicYears(academicYearsData || []);
+                }
+
+
+
+                const { data: housesData, error: housesError } =
+                    await supabase
+                        .from("houses")
+                        .select("id, name, code")
+                        .eq("is_active", true)
+                        .order("name", {
+                            ascending: true,
+                        });
+
+                if (housesError) {
+                    console.error(
+                        "Could not load houses:",
+                        housesError
+                    );
+                } else {
+                    setHouses(housesData || []);
+                }
+
+
+
             }
 
             setTeachers(teachersResult.data || []);
@@ -587,7 +647,7 @@ apaar_id,
 
         setRollNumber("");
         setStream("");
-        setStatus("active");
+        setStudentStatus("Active");
         setAdmissionDate("");
         setAdmissionType("");
         setPreviousSchoolName("");
@@ -660,6 +720,10 @@ apaar_id,
 
         try {
             if (editingStudentId) {
+
+                console.log("STATUS BEFORE UPDATE:", status);
+
+
                 const { error } = await supabase
                     .from("students")
                     .update({
@@ -690,7 +754,9 @@ apaar_id,
                         // Academic Information
                         roll_number: rollNumber.trim() || null,
                         stream: stream.trim() || null,
-                        status: status || "active",
+                        status: studentStatus,
+                        // status: status || "active",
+
 
                         // Admission Information
                         admission_date: admissionDate || null,
@@ -723,6 +789,14 @@ apaar_id,
                         mother_occupation: motherOccupation.trim() || null,
                         mother_qualification: motherQualification.trim() || null,
 
+                        academic_year_id: academicYearId || null,
+                        house_id: houseId || null,
+                        elective_subjects: electiveSubjects
+                            ? electiveSubjects
+                                .split(",")
+                                .map((subject) => subject.trim())
+                                .filter(Boolean)
+                            : null,
 
                     })
                     .eq("id", editingStudentId);
@@ -777,7 +851,8 @@ apaar_id,
                     // Academic Information
                     roll_number: rollNumber.trim() || null,
                     stream: stream.trim() || null,
-                    status: status || "active",
+                    // status: status || "active",
+                    status: studentStatus,
 
                     // Admission Information
                     admission_date: admissionDate || null,
@@ -810,6 +885,15 @@ apaar_id,
                     mother_email: motherEmail.trim() || null,
                     mother_occupation: motherOccupation.trim() || null,
                     mother_qualification: motherQualification.trim() || null,
+                    academic_year_id: academicYearId || null,
+                    house_id: houseId || null,
+                    elective_subjects: electiveSubjects
+                        ? electiveSubjects
+                            .split(",")
+                            .map((subject) => subject.trim())
+                            .filter(Boolean)
+                        : null,
+
 
                 });
 
@@ -847,6 +931,9 @@ apaar_id,
         setGender(student.gender || "");
         setStudentClassId(student.class_id || "");
         setStudentSectionId(student.section_id || "");
+        setStudentStatus(student.status || "Active");
+
+
         setShowStudentForm(true);
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1700,24 +1787,7 @@ apaar_id,
                                 Academic placement and admission-related information.
                             </p>
                         </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
-                            {/* Roll Number */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Roll Number
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={rollNumber}
-                                    onChange={(e) => setRollNumber(e.target.value)}
-                                    placeholder="e.g. 101"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
 
                             {/* Admission Date */}
                             <div>
@@ -1751,82 +1821,46 @@ apaar_id,
                                 </select>
                             </div>
 
-                            {/* Stream */}
+                            {/* Academic Year */}
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Stream
+                                    Academic Year
+                                </label>
+
+                                <select
+                                    value={academicYearId}
+                                    onChange={(e) =>
+                                        setAcademicYearId(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Select academic year</option>
+
+                                    {academicYears.map((year) => (
+                                        <option
+                                            key={year.id}
+                                            value={year.id}
+                                        >
+                                            {year.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Roll Number */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Roll Number
                                 </label>
 
                                 <input
                                     type="text"
-                                    value={stream}
-                                    onChange={(e) => setStream(e.target.value)}
-                                    placeholder="e.g. Science"
+                                    value={rollNumber}
+                                    onChange={(e) => setRollNumber(e.target.value)}
+                                    placeholder="e.g. 101"
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
-
-                            {/* Previous School Name */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolName}
-                                    onChange={(e) => setPreviousSchoolName(e.target.value)}
-                                    placeholder="Previous school name"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School Class */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Class
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolClass}
-                                    onChange={(e) => setPreviousSchoolClass(e.target.value)}
-                                    placeholder="e.g. 8th"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School Board */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Board
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolBoard}
-                                    onChange={(e) => setPreviousSchoolBoard(e.target.value)}
-                                    placeholder="e.g. CBSE"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School TC No. */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School TC No.
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolTcNo}
-                                    onChange={(e) => setPreviousSchoolTcNo(e.target.value)}
-                                    placeholder="Transfer certificate number"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-
 
                             {/* Class */}
                             <div>
@@ -1882,7 +1916,153 @@ apaar_id,
                                 </select>
                             </div>
 
+                            {/* House */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    House
+                                </label>
 
+                                <select
+                                    value={houseId}
+                                    onChange={(e) =>
+                                        setHouseId(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Not assigned</option>
+
+                                    {houses.map((house) => (
+                                        <option
+                                            key={house.id}
+                                            value={house.id}
+                                        >
+                                            {house.name}
+                                            {house.code ? ` (${house.code})` : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Stream */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Stream
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={stream}
+                                    onChange={(e) => setStream(e.target.value)}
+                                    placeholder="e.g. Science"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Elective Subjects */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Elective Subjects
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={electiveSubjects}
+                                    onChange={(e) =>
+                                        setElectiveSubjects(e.target.value)
+                                    }
+                                    placeholder="e.g. Computer Science, Hindi"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Status
+                                </label>
+
+                                <select
+                                    value={studentStatus}
+                                    onChange={(e) =>
+                                        setStudentStatus(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Transferred">Transferred</option>
+                                    <option value="Passed Out">Passed Out</option>
+                                    <option value="Left School">Left School</option>
+                                </select>
+                            </div>
+
+                            {/* Previous School Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolName}
+                                    onChange={(e) =>
+                                        setPreviousSchoolName(e.target.value)
+                                    }
+                                    placeholder="Previous school name"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Class */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Class
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolClass}
+                                    onChange={(e) =>
+                                        setPreviousSchoolClass(e.target.value)
+                                    }
+                                    placeholder="e.g. 8th"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Board */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Board
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolBoard}
+                                    onChange={(e) =>
+                                        setPreviousSchoolBoard(e.target.value)
+                                    }
+                                    placeholder="e.g. CBSE"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School TC No. */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School TC No.
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolTcNo}
+                                    onChange={(e) =>
+                                        setPreviousSchoolTcNo(e.target.value)
+                                    }
+                                    placeholder="Transfer certificate number"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
 
                         </div>
 
@@ -1916,10 +2096,6 @@ apaar_id,
                         </div>
 
                     </form>
-
-
-
-
 
                 </div>
             )}
