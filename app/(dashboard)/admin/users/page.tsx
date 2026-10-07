@@ -29,6 +29,10 @@ type Student = {
 
     student_email: string | null;
     student_phone: string | null;
+    student_alternate_phone: string | null;
+
+    current_address: string | null;
+    permanent_address: string | null;
 
     parent_name: string | null;
     parent_phone: string | null;
@@ -142,8 +146,16 @@ export default function AdminUsersPage() {
     const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [admissionNo, setAdmissionNo] = useState("");
     const [studentName, setStudentName] = useState("");
+
+    // student contact information
     const [studentEmail, setStudentEmail] = useState("");
     const [studentPhone, setStudentPhone] = useState("");
+    const [studentAlternatePhone, setStudentAlternatePhone] = useState("");
+
+    const [currentAddress, setCurrentAddress] = useState("");
+    const [permanentAddress, setPermanentAddress] = useState("");
+    const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
+
     const [studentAadharNumber, setStudentAadharNumber] = useState("");
     const [studentApaarIdNumber, setStudentApaarIdNumber] = useState("");
 
@@ -267,6 +279,12 @@ export default function AdminUsersPage() {
         registration_no,
         student_email,
         student_phone,
+        student_alternate_phone,
+
+        current_address,
+permanent_address,
+
+
         parent_name,
         parent_phone,
         parent_email,
@@ -627,6 +645,13 @@ apaar_id,
         setStudentName("");
         setStudentEmail("");
         setStudentPhone("");
+        setStudentAlternatePhone("");
+
+        setCurrentAddress("");
+        setPermanentAddress("");
+        setSameAsCurrentAddress(false);
+
+
         setParentName("");
         setParentPhone("");
         setParentEmail("");
@@ -732,6 +757,11 @@ apaar_id,
                         name: studentName.trim(),
                         student_email: studentEmail.trim() || null,
                         student_phone: studentPhone.trim() || null,
+                        student_alternate_phone: studentAlternatePhone.trim() || null,
+
+                        current_address: currentAddress.trim() || null,
+                        permanent_address: permanentAddress.trim() || null,
+
                         parent_name: parentName.trim() || null,
                         parent_phone: parentPhone.trim() || null,
                         parent_email: parentEmail.trim() || null,
@@ -829,6 +859,11 @@ apaar_id,
                     name: studentName.trim(),
                     student_email: studentEmail.trim() || null,
                     student_phone: studentPhone.trim() || null,
+                    student_alternate_phone: studentAlternatePhone.trim() || null,
+
+                    current_address: currentAddress.trim() || null,
+                    permanent_address: permanentAddress.trim() || null,
+
                     parent_name: parentName.trim() || null,
                     parent_phone: parentPhone.trim() || null,
                     parent_email: parentEmail.trim() || null,
@@ -924,6 +959,15 @@ apaar_id,
         setStudentName(student.name);
         setStudentEmail(student.student_email || "");
         setStudentPhone(student.student_phone || "");
+        setStudentAlternatePhone(student.student_alternate_phone || "");
+
+        setCurrentAddress(student.current_address || "");
+        setPermanentAddress(student.permanent_address || "");
+        setSameAsCurrentAddress(
+            !!student.current_address &&
+            student.current_address === student.permanent_address
+        );
+
         setParentName(student.parent_name || "");
         setParentPhone(student.parent_phone || "");
         setParentEmail(student.parent_email || "");
@@ -1419,6 +1463,300 @@ apaar_id,
                         </div>
 
 
+
+
+                        {/* ===================================================== */}
+                        {/* ADMISSION & ACADEMIC INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="border-t pt-6 mt-8 mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Admission & Academic Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Academic placement and admission-related information.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                            {/* Admission Date */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Admission Date
+                                </label>
+
+                                <input
+                                    type="date"
+                                    value={admissionDate}
+                                    onChange={(e) => setAdmissionDate(e.target.value)}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Admission Type */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Admission Type
+                                </label>
+
+                                <select
+                                    value={admissionType}
+                                    onChange={(e) => setAdmissionType(e.target.value)}
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Select admission type</option>
+                                    <option value="New">New</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Re-admission">Re-admission</option>
+                                </select>
+                            </div>
+
+                            {/* Academic Year */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Academic Year
+                                </label>
+
+                                <select
+                                    value={academicYearId}
+                                    onChange={(e) =>
+                                        setAcademicYearId(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Select academic year</option>
+
+                                    {academicYears.map((year) => (
+                                        <option
+                                            key={year.id}
+                                            value={year.id}
+                                        >
+                                            {year.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Roll Number */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Roll Number
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={rollNumber}
+                                    onChange={(e) => setRollNumber(e.target.value)}
+                                    placeholder="e.g. 101"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Class */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Class
+                                </label>
+
+                                <select
+                                    value={studentClassId}
+                                    onChange={(e) => {
+                                        setStudentClassId(e.target.value);
+                                        setStudentSectionId("");
+                                    }}
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Not assigned</option>
+
+                                    {classes.map((schoolClass) => (
+                                        <option
+                                            key={schoolClass.id}
+                                            value={schoolClass.id}
+                                        >
+                                            {schoolClass.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Section */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Section
+                                </label>
+
+                                <select
+                                    value={studentSectionId}
+                                    onChange={(e) =>
+                                        setStudentSectionId(e.target.value)
+                                    }
+                                    disabled={!studentClassId}
+                                    className="w-full border rounded-md p-3 bg-white disabled:bg-gray-100"
+                                >
+                                    <option value="">Not assigned</option>
+
+                                    {getSectionsForSelectedClass().map((section) => (
+                                        <option
+                                            key={section.id}
+                                            value={section.id}
+                                        >
+                                            {section.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* House */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    House
+                                </label>
+
+                                <select
+                                    value={houseId}
+                                    onChange={(e) =>
+                                        setHouseId(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="">Not assigned</option>
+
+                                    {houses.map((house) => (
+                                        <option
+                                            key={house.id}
+                                            value={house.id}
+                                        >
+                                            {house.name}
+                                            {house.code ? ` (${house.code})` : ""}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Stream */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Stream
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={stream}
+                                    onChange={(e) => setStream(e.target.value)}
+                                    placeholder="e.g. Science"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Elective Subjects */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Elective Subjects
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={electiveSubjects}
+                                    onChange={(e) =>
+                                        setElectiveSubjects(e.target.value)
+                                    }
+                                    placeholder="e.g. Computer Science, Hindi"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Status
+                                </label>
+
+                                <select
+                                    value={studentStatus}
+                                    onChange={(e) =>
+                                        setStudentStatus(e.target.value)
+                                    }
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="Active">Active</option>
+                                    <option value="Inactive">Inactive</option>
+                                    <option value="Transferred">Transferred</option>
+                                    <option value="Passed Out">Passed Out</option>
+                                    <option value="Left School">Left School</option>
+                                </select>
+                            </div>
+
+                            {/* Previous School Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolName}
+                                    onChange={(e) =>
+                                        setPreviousSchoolName(e.target.value)
+                                    }
+                                    placeholder="Previous school name"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Class */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Class
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolClass}
+                                    onChange={(e) =>
+                                        setPreviousSchoolClass(e.target.value)
+                                    }
+                                    placeholder="e.g. 8th"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School Board */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School Board
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolBoard}
+                                    onChange={(e) =>
+                                        setPreviousSchoolBoard(e.target.value)
+                                    }
+                                    placeholder="e.g. CBSE"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Previous School TC No. */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Previous School TC No.
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={previousSchoolTcNo}
+                                    onChange={(e) =>
+                                        setPreviousSchoolTcNo(e.target.value)
+                                    }
+                                    placeholder="Transfer certificate number"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                        </div>
+
+
                         {/* ===================================================== */}
                         {/* CONTACT INFORMATION */}
                         {/* ===================================================== */}
@@ -1466,6 +1804,97 @@ apaar_id,
                                     }
                                     placeholder="e.g. 9876543210"
                                     className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Alternate Phone */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Alternate Phone
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    inputMode="numeric"
+                                    value={studentAlternatePhone}
+                                    onChange={(e) =>
+                                        setStudentAlternatePhone(
+                                            e.target.value.replace(/\D/g, "")
+                                        )
+                                    }
+                                    placeholder="e.g. 9876543210"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                        </div>
+
+
+                        {/* ===================================================== */}
+                        {/* ADDRESS INFORMATION */}
+                        {/* ===================================================== */}
+
+                        <div className="border-t pt-6 mt-8 mb-5">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                                Address Information
+                            </h3>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Address information of the student.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6">
+
+                            {/* Current Address */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Current Address
+                                </label>
+
+                                <textarea
+                                    value={currentAddress}
+                                    onChange={(e) => setCurrentAddress(e.target.value)}
+                                    placeholder="Enter current address"
+                                    rows={3}
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Same as Current Address */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={sameAsCurrentAddress}
+                                    id='sameAsCurrentAddress'
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setSameAsCurrentAddress(checked);
+
+                                        if (checked) {
+                                            setPermanentAddress(currentAddress);
+                                        }
+                                    }}
+                                    className="h-4 w-4"
+                                />
+
+                                <label className="text-sm font-medium" htmlFor="sameAsCurrentAddress">
+                                    Same as Current Address
+                                </label>
+                            </div>
+
+                            {/* Permanent Address */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Permanent Address
+                                </label>
+
+                                <textarea
+                                    value={permanentAddress}
+                                    onChange={(e) => setPermanentAddress(e.target.value)}
+                                    placeholder="Enter permanent address"
+                                    rows={3}
+                                    disabled={sameAsCurrentAddress}
+                                    className="w-full border rounded-md p-3 disabled:bg-gray-100"
                                 />
                             </div>
 
@@ -1775,296 +2204,6 @@ apaar_id,
 
 
 
-                        {/* ===================================================== */}
-                        {/* ADMISSION & ACADEMIC INFORMATION */}
-                        {/* ===================================================== */}
-
-                        <div className="border-t pt-6 mt-8 mb-5">
-                            <h3 className="text-lg font-semibold text-gray-800">
-                                Admission & Academic Information
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Academic placement and admission-related information.
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                            {/* Admission Date */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Admission Date
-                                </label>
-
-                                <input
-                                    type="date"
-                                    value={admissionDate}
-                                    onChange={(e) => setAdmissionDate(e.target.value)}
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Admission Type */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Admission Type
-                                </label>
-
-                                <select
-                                    value={admissionType}
-                                    onChange={(e) => setAdmissionType(e.target.value)}
-                                    className="w-full border rounded-md p-3 bg-white"
-                                >
-                                    <option value="">Select admission type</option>
-                                    <option value="New">New</option>
-                                    <option value="Transfer">Transfer</option>
-                                    <option value="Re-admission">Re-admission</option>
-                                </select>
-                            </div>
-
-                            {/* Academic Year */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Academic Year
-                                </label>
-
-                                <select
-                                    value={academicYearId}
-                                    onChange={(e) =>
-                                        setAcademicYearId(e.target.value)
-                                    }
-                                    className="w-full border rounded-md p-3 bg-white"
-                                >
-                                    <option value="">Select academic year</option>
-
-                                    {academicYears.map((year) => (
-                                        <option
-                                            key={year.id}
-                                            value={year.id}
-                                        >
-                                            {year.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Roll Number */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Roll Number
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={rollNumber}
-                                    onChange={(e) => setRollNumber(e.target.value)}
-                                    placeholder="e.g. 101"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Class */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Class
-                                </label>
-
-                                <select
-                                    value={studentClassId}
-                                    onChange={(e) => {
-                                        setStudentClassId(e.target.value);
-                                        setStudentSectionId("");
-                                    }}
-                                    className="w-full border rounded-md p-3 bg-white"
-                                >
-                                    <option value="">Not assigned</option>
-
-                                    {classes.map((schoolClass) => (
-                                        <option
-                                            key={schoolClass.id}
-                                            value={schoolClass.id}
-                                        >
-                                            {schoolClass.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Section */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Section
-                                </label>
-
-                                <select
-                                    value={studentSectionId}
-                                    onChange={(e) =>
-                                        setStudentSectionId(e.target.value)
-                                    }
-                                    disabled={!studentClassId}
-                                    className="w-full border rounded-md p-3 bg-white disabled:bg-gray-100"
-                                >
-                                    <option value="">Not assigned</option>
-
-                                    {getSectionsForSelectedClass().map((section) => (
-                                        <option
-                                            key={section.id}
-                                            value={section.id}
-                                        >
-                                            {section.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* House */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    House
-                                </label>
-
-                                <select
-                                    value={houseId}
-                                    onChange={(e) =>
-                                        setHouseId(e.target.value)
-                                    }
-                                    className="w-full border rounded-md p-3 bg-white"
-                                >
-                                    <option value="">Not assigned</option>
-
-                                    {houses.map((house) => (
-                                        <option
-                                            key={house.id}
-                                            value={house.id}
-                                        >
-                                            {house.name}
-                                            {house.code ? ` (${house.code})` : ""}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Stream */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Stream
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={stream}
-                                    onChange={(e) => setStream(e.target.value)}
-                                    placeholder="e.g. Science"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Elective Subjects */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Elective Subjects
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={electiveSubjects}
-                                    onChange={(e) =>
-                                        setElectiveSubjects(e.target.value)
-                                    }
-                                    placeholder="e.g. Computer Science, Hindi"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Status */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Status
-                                </label>
-
-                                <select
-                                    value={studentStatus}
-                                    onChange={(e) =>
-                                        setStudentStatus(e.target.value)
-                                    }
-                                    className="w-full border rounded-md p-3 bg-white"
-                                >
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                    <option value="Transferred">Transferred</option>
-                                    <option value="Passed Out">Passed Out</option>
-                                    <option value="Left School">Left School</option>
-                                </select>
-                            </div>
-
-                            {/* Previous School Name */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolName}
-                                    onChange={(e) =>
-                                        setPreviousSchoolName(e.target.value)
-                                    }
-                                    placeholder="Previous school name"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School Class */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Class
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolClass}
-                                    onChange={(e) =>
-                                        setPreviousSchoolClass(e.target.value)
-                                    }
-                                    placeholder="e.g. 8th"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School Board */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School Board
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolBoard}
-                                    onChange={(e) =>
-                                        setPreviousSchoolBoard(e.target.value)
-                                    }
-                                    placeholder="e.g. CBSE"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                            {/* Previous School TC No. */}
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Previous School TC No.
-                                </label>
-
-                                <input
-                                    type="text"
-                                    value={previousSchoolTcNo}
-                                    onChange={(e) =>
-                                        setPreviousSchoolTcNo(e.target.value)
-                                    }
-                                    placeholder="Transfer certificate number"
-                                    className="w-full border rounded-md p-3"
-                                />
-                            </div>
-
-                        </div>
 
 
                         {/* ===================================================== */}
