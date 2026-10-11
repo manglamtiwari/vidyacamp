@@ -38,6 +38,37 @@ type Student = {
     parent_phone: string | null;
     parent_email: string | null;
 
+    father_name: string | null;
+    father_phone: string | null;
+    father_alternate_phone: string | null;
+    father_email: string | null;
+    father_occupation: string | null;
+    father_qualification: string | null;
+    father_aadhaar_number: string | null;
+    father_annual_income: number | null;
+
+    mother_name: string | null;
+    mother_phone: string | null;
+    mother_alternate_phone: string | null;
+    mother_email: string | null;
+    mother_occupation: string | null;
+    mother_qualification: string | null;
+    mother_aadhaar_number: string | null;
+    mother_annual_income: number | null;
+
+    // Guardian Information
+
+    guardian_type: string | null;
+    guardian_name: string | null;
+    guardian_relation: string | null;
+    guardian_phone: string | null;
+    guardian_alternate_phone: string | null;
+    guardian_email: string | null;
+    guardian_occupation: string | null;
+    guardian_qualification: string | null;
+    guardian_address: string | null;
+    is_primary_guardian: boolean;
+
     date_of_birth: string | null;
     gender: string | null;
 
@@ -58,6 +89,29 @@ type Student = {
     elective_subjects: unknown;
 
     status: string | null;
+
+    // Emergency Contact Information
+    emergency_contact_type: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_alternate_phone: string | null;
+    emergency_contact_email: string | null;
+    emergency_contact_relation: string | null;
+    emergency_contact_address: string | null;
+
+    // Health & Medical Information
+    allergies: string | null;
+    medical_conditions: string | null;
+    medications: string | null;
+    disabilities: string | null;
+    dietary_restrictions: string | null;
+    special_health_instructions: string | null;
+    doctor_name: string | null;
+    doctor_phone: string | null;
+    doctor_address: string | null;
+    insurance_provider: string | null;
+    insurance_policy_no: string | null;
+
 
     admission_date: string | null;
     admission_type: string | null;
@@ -169,12 +223,20 @@ export default function AdminUsersPage() {
     const [fatherEmail, setFatherEmail] = useState("");
     const [fatherOccupation, setFatherOccupation] = useState("");
     const [fatherQualification, setFatherQualification] = useState("");
+    const [fatherAadhaarNumber, setFatherAadhaarNumber] = useState("");
+    const [fatherAnnualIncome, setFatherAnnualIncome] = useState("");
+
+
     const [motherName, setMotherName] = useState("");
     const [motherPhone, setMotherPhone] = useState("");
     const [motherAlternatePhone, setMotherAlternatePhone] = useState("");
     const [motherEmail, setMotherEmail] = useState("");
     const [motherOccupation, setMotherOccupation] = useState("");
     const [motherQualification, setMotherQualification] = useState("");
+    const [motherAadhaarNumber, setMotherAadhaarNumber] = useState("");
+    const [motherAnnualIncome, setMotherAnnualIncome] = useState("");
+
+    const [emergencyContactType, setEmergencyContactType] = useState("Father");
 
 
     const [dateOfBirth, setDateOfBirth] = useState("");
@@ -202,6 +264,38 @@ export default function AdminUsersPage() {
     const [previousSchoolClass, setPreviousSchoolClass] = useState("");
     const [previousSchoolBoard, setPreviousSchoolBoard] = useState("");
     const [previousSchoolTcNo, setPreviousSchoolTcNo] = useState("");
+
+    // Guardian Information
+    const [guardianType, setGuardianType] = useState("Father");
+    const [guardianName, setGuardianName] = useState("");
+    const [guardianRelation, setGuardianRelation] = useState("");
+    const [guardianPhone, setGuardianPhone] = useState("");
+    const [guardianAlternatePhone, setGuardianAlternatePhone] = useState("");
+    const [guardianEmail, setGuardianEmail] = useState("");
+    const [guardianOccupation, setGuardianOccupation] = useState("");
+    const [guardianQualification, setGuardianQualification] = useState("");
+    const [guardianAddress, setGuardianAddress] = useState("");
+    const [isPrimaryGuardian, setIsPrimaryGuardian] = useState(true);
+
+    const [emergencyContactName, setEmergencyContactName] = useState("");
+    const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+    const [emergencyContactAlternatePhone, setEmergencyContactAlternatePhone] = useState("");
+    const [emergencyContactEmail, setEmergencyContactEmail] = useState("");
+    const [emergencyContactRelation, setEmergencyContactRelation] = useState("");
+    const [emergencyContactAddress, setEmergencyContactAddress] = useState("");
+
+
+    const [allergies, setAllergies] = useState("");
+    const [medicalConditions, setMedicalConditions] = useState("");
+    const [medications, setMedications] = useState("");
+    const [disabilities, setDisabilities] = useState("");
+    const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+    const [specialHealthInstructions, setSpecialHealthInstructions] = useState("");
+    const [doctorName, setDoctorName] = useState("");
+    const [doctorPhone, setDoctorPhone] = useState("");
+    const [doctorAddress, setDoctorAddress] = useState("");
+    const [insuranceProvider, setInsuranceProvider] = useState("");
+    const [insurancePolicyNo, setInsurancePolicyNo] = useState("");
 
 
     useEffect(() => {
@@ -271,51 +365,101 @@ export default function AdminUsersPage() {
 
                 supabase
                     .from("students")
-                    .select(
-                        `
-        id,
-        name,
-        admission_no,
-        registration_no,
-        student_email,
-        student_phone,
-        student_alternate_phone,
+                    .select(`
+    id,
+    name,
+    admission_no,
+    registration_no,
+    student_email,
+    student_phone,
+    student_alternate_phone,
 
-        current_address,
-permanent_address,
+    current_address,
+    permanent_address,
 
+    parent_name,
+    parent_phone,
+    parent_email,
 
-        parent_name,
-        parent_phone,
-        parent_email,
-        date_of_birth,
-        gender,
-        blood_group,
-        nationality,
-        religion,
-        category,
-        caste,
-        mother_tongue,
-        photo_url,
-        aadhaar_number,
-apaar_id,
-        academic_year_id,
-        roll_number,
-        class_id,
-        section_id,
-        house_id,
-        stream,
-         elective_subjects,
-        status,
-        admission_date,
-        admission_type,
-        previous_school_name,
-        previous_school_class,
-        previous_school_board,
-        previous_school_tc_no,
-        is_active
-        `
-                    )
+    father_name,
+    father_phone,
+    father_alternate_phone,
+    father_email,
+    father_occupation,
+    father_qualification,
+    father_aadhaar_number,
+    father_annual_income,
+
+    mother_name,
+    mother_phone,
+    mother_alternate_phone,
+    mother_email,
+    mother_occupation,
+    mother_qualification,
+    mother_aadhaar_number,
+mother_annual_income,
+
+guardian_type,
+guardian_name,
+guardian_relation,
+guardian_phone,
+guardian_alternate_phone,
+guardian_email,
+guardian_occupation,
+guardian_qualification,
+guardian_address,
+is_primary_guardian,
+
+    date_of_birth,
+    gender,
+    blood_group,
+    nationality,
+    religion,
+    category,
+    caste,
+    mother_tongue,
+    photo_url,
+    aadhaar_number,
+    apaar_id,
+
+    academic_year_id,
+    roll_number,
+    class_id,
+    section_id,
+    house_id,
+    stream,
+    elective_subjects,
+
+    status,
+    emergency_contact_type,
+emergency_contact_name,
+emergency_contact_phone,
+emergency_contact_alternate_phone,
+emergency_contact_email,
+emergency_contact_relation,
+emergency_contact_address,
+
+allergies,
+medical_conditions,
+medications,
+disabilities,
+dietary_restrictions,
+special_health_instructions,
+doctor_name,
+doctor_phone,
+doctor_address,
+insurance_provider,
+insurance_policy_no,
+
+    admission_date,
+    admission_type,
+    previous_school_name,
+    previous_school_class,
+    previous_school_board,
+    previous_school_tc_no,
+    is_active
+`)
+
                     .eq("school_id", schoolId)
                     .order("name"),
 
@@ -688,6 +832,8 @@ apaar_id,
         setFatherEmail("");
         setFatherOccupation("");
         setFatherQualification("");
+        setFatherAadhaarNumber("");
+        setFatherAnnualIncome("");
 
         // Mother Information
         setMotherName("");
@@ -696,6 +842,43 @@ apaar_id,
         setMotherEmail("");
         setMotherOccupation("");
         setMotherQualification("");
+        setMotherAadhaarNumber("");
+        setMotherAnnualIncome("");
+
+        // Reset Guardian Information
+        setGuardianType("Father");
+        setGuardianName("");
+        setGuardianRelation("");
+        setGuardianPhone("");
+        setGuardianAlternatePhone("");
+        setGuardianEmail("");
+        setGuardianOccupation("");
+        setGuardianQualification("");
+        setGuardianAddress("");
+        setIsPrimaryGuardian(true);
+
+        setEmergencyContactType("Father");
+        setEmergencyContactName("");
+        setEmergencyContactPhone("");
+        setEmergencyContactAlternatePhone("");
+        setEmergencyContactEmail("");
+        setEmergencyContactRelation("");
+        setEmergencyContactAddress("");
+
+
+
+        setAllergies("");
+        setMedicalConditions("");
+        setMedications("");
+        setDisabilities("");
+        setDietaryRestrictions("");
+        setSpecialHealthInstructions("");
+        setDoctorName("");
+        setDoctorPhone("");
+        setDoctorAddress("");
+        setInsuranceProvider("");
+        setInsurancePolicyNo("");
+
 
         setEditingStudentId(null);
         setShowStudentForm(false);
@@ -808,6 +991,10 @@ apaar_id,
                         father_email: fatherEmail.trim() || null,
                         father_occupation: fatherOccupation.trim() || null,
                         father_qualification: fatherQualification.trim() || null,
+                        father_aadhaar_number: fatherAadhaarNumber.trim() || null,
+                        father_annual_income: fatherAnnualIncome.trim()
+                            ? Number(fatherAnnualIncome)
+                            : null,
 
 
                         // Mother Information
@@ -818,6 +1005,78 @@ apaar_id,
                         mother_email: motherEmail.trim() || null,
                         mother_occupation: motherOccupation.trim() || null,
                         mother_qualification: motherQualification.trim() || null,
+                        mother_aadhaar_number: motherAadhaarNumber.trim() || null,
+                        mother_annual_income: motherAnnualIncome.trim()
+                            ? Number(motherAnnualIncome)
+                            : null,
+
+                        guardian_type: guardianType,
+
+                        guardian_name:
+                            guardianType === "Separate Guardian"
+                                ? guardianName.trim() || null
+                                : null,
+
+                        guardian_relation:
+                            guardianType === "Separate Guardian"
+                                ? guardianRelation.trim() || null
+                                : null,
+
+                        guardian_phone:
+                            guardianType === "Separate Guardian"
+                                ? guardianPhone.trim() || null
+                                : null,
+
+                        guardian_alternate_phone:
+                            guardianType === "Separate Guardian"
+                                ? guardianAlternatePhone.trim() || null
+                                : null,
+
+                        guardian_email:
+                            guardianType === "Separate Guardian"
+                                ? guardianEmail.trim() || null
+                                : null,
+
+                        guardian_occupation:
+                            guardianType === "Separate Guardian"
+                                ? guardianOccupation.trim() || null
+                                : null,
+
+                        guardian_qualification:
+                            guardianType === "Separate Guardian"
+                                ? guardianQualification.trim() || null
+                                : null,
+
+                        guardian_address:
+                            guardianType === "Separate Guardian"
+                                ? guardianAddress.trim() || null
+                                : null,
+
+                        is_primary_guardian: isPrimaryGuardian,
+
+                        emergency_contact_type: emergencyContactType,
+                        emergency_contact_name: emergencyContactType === "Other" ? emergencyContactName : null,
+                        emergency_contact_phone: emergencyContactType === "Other" ? emergencyContactPhone : null,
+                        emergency_contact_alternate_phone: emergencyContactType === "Other" ? emergencyContactAlternatePhone : null,
+                        emergency_contact_email: emergencyContactType === "Other" ? emergencyContactEmail : null,
+                        emergency_contact_relation: emergencyContactType === "Other" ? emergencyContactRelation : null,
+                        emergency_contact_address: emergencyContactType === "Other" ? emergencyContactAddress : null,
+
+
+
+                        allergies: allergies || null,
+                        medical_conditions: medicalConditions || null,
+                        medications: medications || null,
+                        disabilities: disabilities || null,
+                        dietary_restrictions: dietaryRestrictions || null,
+                        special_health_instructions: specialHealthInstructions || null,
+                        doctor_name: doctorName || null,
+                        doctor_phone: doctorPhone || null,
+                        doctor_address: doctorAddress || null,
+                        insurance_provider: insuranceProvider || null,
+                        insurance_policy_no: insurancePolicyNo || null,
+
+
 
                         academic_year_id: academicYearId || null,
                         house_id: houseId || null,
@@ -910,7 +1169,10 @@ apaar_id,
                     father_email: fatherEmail.trim() || null,
                     father_occupation: fatherOccupation.trim() || null,
                     father_qualification: fatherQualification.trim() || null,
-
+                    father_aadhaar_number: fatherAadhaarNumber.trim() || null,
+                    father_annual_income: fatherAnnualIncome.trim()
+                        ? Number(fatherAnnualIncome)
+                        : null,
 
                     // Mother Information
                     mother_name: motherName.trim() || null,
@@ -920,6 +1182,79 @@ apaar_id,
                     mother_email: motherEmail.trim() || null,
                     mother_occupation: motherOccupation.trim() || null,
                     mother_qualification: motherQualification.trim() || null,
+                    mother_aadhaar_number: motherAadhaarNumber.trim() || null,
+                    mother_annual_income: motherAnnualIncome.trim()
+                        ? Number(motherAnnualIncome)
+                        : null,
+
+                    guardian_type: guardianType,
+
+                    guardian_name:
+                        guardianType === "Separate Guardian"
+                            ? guardianName.trim() || null
+                            : null,
+
+                    guardian_relation:
+                        guardianType === "Separate Guardian"
+                            ? guardianRelation.trim() || null
+                            : null,
+
+                    guardian_phone:
+                        guardianType === "Separate Guardian"
+                            ? guardianPhone.trim() || null
+                            : null,
+
+                    guardian_alternate_phone:
+                        guardianType === "Separate Guardian"
+                            ? guardianAlternatePhone.trim() || null
+                            : null,
+
+                    guardian_email:
+                        guardianType === "Separate Guardian"
+                            ? guardianEmail.trim() || null
+                            : null,
+
+                    guardian_occupation:
+                        guardianType === "Separate Guardian"
+                            ? guardianOccupation.trim() || null
+                            : null,
+
+                    guardian_qualification:
+                        guardianType === "Separate Guardian"
+                            ? guardianQualification.trim() || null
+                            : null,
+
+                    guardian_address:
+                        guardianType === "Separate Guardian"
+                            ? guardianAddress.trim() || null
+                            : null,
+
+                    is_primary_guardian: isPrimaryGuardian,
+
+                    emergency_contact_type: emergencyContactType,
+                    emergency_contact_name: emergencyContactType === "Other" ? emergencyContactName : null,
+                    emergency_contact_phone: emergencyContactType === "Other" ? emergencyContactPhone : null,
+                    emergency_contact_alternate_phone: emergencyContactType === "Other" ? emergencyContactAlternatePhone : null,
+                    emergency_contact_email: emergencyContactType === "Other" ? emergencyContactEmail : null,
+                    emergency_contact_relation: emergencyContactType === "Other" ? emergencyContactRelation : null,
+                    emergency_contact_address: emergencyContactType === "Other" ? emergencyContactAddress : null,
+
+
+
+                    allergies: allergies || null,
+                    medical_conditions: medicalConditions || null,
+                    medications: medications || null,
+                    disabilities: disabilities || null,
+                    dietary_restrictions: dietaryRestrictions || null,
+                    special_health_instructions: specialHealthInstructions || null,
+                    doctor_name: doctorName || null,
+                    doctor_phone: doctorPhone || null,
+                    doctor_address: doctorAddress || null,
+                    insurance_provider: insuranceProvider || null,
+                    insurance_policy_no: insurancePolicyNo || null,
+
+
+
                     academic_year_id: academicYearId || null,
                     house_id: houseId || null,
                     elective_subjects: electiveSubjects
@@ -955,12 +1290,19 @@ apaar_id,
 
     function handleEditStudent(student: Student) {
         setEditingStudentId(student.id);
-        setAdmissionNo(student.admission_no);
-        setStudentName(student.name);
+
+        // Basic Information
+        setAdmissionNo(student.admission_no || "");
+        setStudentName(student.name || "");
+        setDateOfBirth(student.date_of_birth || "");
+        setGender(student.gender || "");
+
+        // Student Contact
         setStudentEmail(student.student_email || "");
         setStudentPhone(student.student_phone || "");
         setStudentAlternatePhone(student.student_alternate_phone || "");
 
+        // Address
         setCurrentAddress(student.current_address || "");
         setPermanentAddress(student.permanent_address || "");
         setSameAsCurrentAddress(
@@ -968,20 +1310,114 @@ apaar_id,
             student.current_address === student.permanent_address
         );
 
+        // Student Identification
+        setRegistrationNo(student.registration_no || "");
+        setStudentAadharNumber(student.aadhaar_number || "");
+        setStudentApaarIdNumber(student.apaar_id || "");
+        setBloodGroup(student.blood_group || "");
+        setNationality(student.nationality || "");
+        setReligion(student.religion || "");
+        setCategory(student.category || "");
+        setCaste(student.caste || "");
+        setMotherTongue(student.mother_tongue || "");
+
+        // Parent / Guardian
         setParentName(student.parent_name || "");
         setParentPhone(student.parent_phone || "");
         setParentEmail(student.parent_email || "");
-        setDateOfBirth(student.date_of_birth || "");
-        setGender(student.gender || "");
+
+        // Father Information
+        setFatherName(student.father_name || "");
+        setFatherPhone(student.father_phone || "");
+        setFatherAlternatePhone(student.father_alternate_phone || "");
+        setFatherEmail(student.father_email || "");
+        setFatherOccupation(student.father_occupation || "");
+        setFatherQualification(student.father_qualification || "");
+        setFatherAadhaarNumber(student.father_aadhaar_number || "");
+        setFatherAnnualIncome(
+            student.father_annual_income != null
+                ? String(student.father_annual_income)
+                : ""
+        );
+
+        // Mother Information
+        setMotherName(student.mother_name || "");
+        setMotherPhone(student.mother_phone || "");
+        setMotherAlternatePhone(student.mother_alternate_phone || "");
+        setMotherEmail(student.mother_email || "");
+        setMotherOccupation(student.mother_occupation || "");
+        setMotherQualification(student.mother_qualification || "");
+        setMotherAadhaarNumber(student.mother_aadhaar_number || "");
+
+        setMotherAnnualIncome(
+            student.mother_annual_income != null
+                ? String(student.mother_annual_income)
+                : ""
+        );
+
+        // Guardian Information
+        setGuardianType(student.guardian_type || "Father");
+        setGuardianName(student.guardian_name || "");
+        setGuardianRelation(student.guardian_relation || "");
+        setGuardianPhone(student.guardian_phone || "");
+        setGuardianAlternatePhone(student.guardian_alternate_phone || "");
+        setGuardianEmail(student.guardian_email || "");
+        setGuardianOccupation(student.guardian_occupation || "");
+        setGuardianQualification(student.guardian_qualification || "");
+        setGuardianAddress(student.guardian_address || "");
+        setIsPrimaryGuardian(student.is_primary_guardian ?? true);
+
+        // Emergency Contact Information
+        setEmergencyContactType(student.emergency_contact_type || "Father");
+        setEmergencyContactName(student.emergency_contact_name || "");
+        setEmergencyContactPhone(student.emergency_contact_phone || "");
+        setEmergencyContactAlternatePhone(student.emergency_contact_alternate_phone || "");
+        setEmergencyContactEmail(student.emergency_contact_email || "");
+        setEmergencyContactRelation(student.emergency_contact_relation || "");
+        setEmergencyContactAddress(student.emergency_contact_address || "");
+
+        // Health Information
+        setAllergies(student.allergies || "");
+        setMedicalConditions(student.medical_conditions || "");
+        setMedications(student.medications || "");
+        setDisabilities(student.disabilities || "");
+        setDietaryRestrictions(student.dietary_restrictions || "");
+        setSpecialHealthInstructions(student.special_health_instructions || "");
+        setDoctorName(student.doctor_name || "");
+        setDoctorPhone(student.doctor_phone || "");
+        setDoctorAddress(student.doctor_address || "");
+        setInsuranceProvider(student.insurance_provider || "");
+        setInsurancePolicyNo(student.insurance_policy_no || "");
+
+
+        // Academic Information
+        setAcademicYearId(student.academic_year_id || "");
+        setRollNumber(student.roll_number || "");
         setStudentClassId(student.class_id || "");
         setStudentSectionId(student.section_id || "");
+        setHouseId(student.house_id || "");
+        setStream(student.stream || "");
+        setElectiveSubjects(
+            Array.isArray(student.elective_subjects)
+                ? student.elective_subjects.join(", ")
+                : ""
+        );
         setStudentStatus(student.status || "Active");
 
+        // Admission Information
+        setAdmissionDate(student.admission_date || "");
+        setAdmissionType(student.admission_type || "");
+        setPreviousSchoolName(student.previous_school_name || "");
+        setPreviousSchoolClass(student.previous_school_class || "");
+        setPreviousSchoolBoard(student.previous_school_board || "");
+        setPreviousSchoolTcNo(student.previous_school_tc_no || "");
 
+        // Show Form
         setShowStudentForm(true);
-
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
+
+
 
     async function handleDeactivateStudent(student: Student) {
         const confirmed = window.confirm(
@@ -2081,6 +2517,43 @@ apaar_id,
                                 />
                             </div>
 
+                            {/* Father Aadhaar */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Aadhaar Number
+                                </label>
+
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    maxLength={12}
+                                    value={fatherAadhaarNumber}
+                                    onChange={(e) =>
+                                        setFatherAadhaarNumber(
+                                            e.target.value.replace(/\D/g, "").slice(0, 12)
+                                        )
+                                    }
+                                    placeholder="Enter father's Aadhaar number"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Father Annual Income */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Annual Income (₹)
+                                </label>
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={fatherAnnualIncome}
+                                    onChange={(e) => setFatherAnnualIncome(e.target.value)}
+                                    placeholder="e.g. 500000"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
 
                             {/* ===================================================== */}
                             {/* MOTHER INFORMATION */}
@@ -2196,6 +2669,509 @@ apaar_id,
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
+
+
+                            {/* Mother Aadhaar */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Aadhaar Number
+                                </label>
+
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    maxLength={12}
+                                    value={motherAadhaarNumber}
+                                    onChange={(e) =>
+                                        setMotherAadhaarNumber(
+                                            e.target.value.replace(/\D/g, "").slice(0, 12)
+                                        )
+                                    }
+                                    placeholder="Enter mother's Aadhaar number"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+                            {/* Mother Annual Income */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Annual Income (₹)
+                                </label>
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={motherAnnualIncome}
+                                    onChange={(e) => setMotherAnnualIncome(e.target.value)}
+                                    placeholder="e.g. 300000"
+                                    className="w-full border rounded-md p-3"
+                                />
+                            </div>
+
+
+
+
+
+
+                            {/* ===================================================== */}
+                            {/* GUARDIAN INFORMATION */}
+                            {/* ===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1">
+                                <h4 className="text-base font-semibold text-gray-800">
+                                    Guardian Information
+                                </h4>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Select a parent or enter details for a separate guardian.
+                                </p>
+                            </div>
+
+                            {/* Guardian Type */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Guardian Type
+                                </label>
+
+                                <select
+                                    value={guardianType}
+                                    onChange={(e) => setGuardianType(e.target.value)}
+                                    className="w-full border rounded-md p-3 bg-white"
+                                >
+                                    <option value="Father">Father</option>
+                                    <option value="Mother">Mother</option>
+                                    <option value="Separate Guardian">Separate Guardian</option>
+                                </select>
+                            </div>
+
+                            {/* Primary Guardian */}
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={isPrimaryGuardian}
+                                    onChange={(e) => setIsPrimaryGuardian(e.target.checked)}
+                                    className="h-4 w-4"
+                                />
+
+                                <label className="text-sm font-medium">
+                                    Primary Guardian
+                                </label>
+                            </div>
+
+                            {/* Selected Parent Information */}
+                            {guardianType !== "Separate Guardian" && (
+                                <div className="col-span-1 md:col-span-2 rounded-md bg-gray-50 border p-4">
+                                    <p className="text-sm text-gray-600">
+                                        {guardianType === "Father"
+                                            ? `Father: ${fatherName || "Name not entered"}`
+                                            : `Mother: ${motherName || "Name not entered"}`}
+                                    </p>
+
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        The selected parent's existing details will be used.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Separate Guardian Fields */}
+                            {guardianType === "Separate Guardian" && (
+                                <>
+                                    {/* Guardian Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={guardianName}
+                                            onChange={(e) => setGuardianName(e.target.value)}
+                                            placeholder="Enter guardian name"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Relation */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Relation
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={guardianRelation}
+                                            onChange={(e) => setGuardianRelation(e.target.value)}
+                                            placeholder="e.g. Grandfather, Uncle"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Guardian Phone */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Phone
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            value={guardianPhone}
+                                            onChange={(e) =>
+                                                setGuardianPhone(e.target.value.replace(/\D/g, ""))
+                                            }
+                                            placeholder="e.g. 9876543210"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Alternate Phone */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Alternate Phone
+                                        </label>
+                                        <input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            value={guardianAlternatePhone}
+                                            onChange={(e) =>
+                                                setGuardianAlternatePhone(
+                                                    e.target.value.replace(/\D/g, "")
+                                                )
+                                            }
+                                            placeholder="e.g. 9123456789"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Guardian Email */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Email
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={guardianEmail}
+                                            onChange={(e) => setGuardianEmail(e.target.value)}
+                                            placeholder="e.g. guardian@email.com"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Guardian Occupation */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Occupation
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={guardianOccupation}
+                                            onChange={(e) => setGuardianOccupation(e.target.value)}
+                                            placeholder="e.g. Business"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Guardian Qualification */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Qualification
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={guardianQualification}
+                                            onChange={(e) => setGuardianQualification(e.target.value)}
+                                            placeholder="e.g. Graduate"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    {/* Guardian Address */}
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">
+                                            Guardian Address
+                                        </label>
+                                        <textarea
+                                            value={guardianAddress}
+                                            onChange={(e) => setGuardianAddress(e.target.value)}
+                                            placeholder="Enter guardian's full address"
+                                            rows={3}
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+
+
+                            {/* =====================================================
+    EMERGENCY CONTACT INFORMATION
+===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+                                <div>
+                                    <h4 className="text-base font-semibold text-gray-800">
+                                        Emergency Contact Information
+                                    </h4>
+
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Select the person to contact in case of an emergency.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">
+                                            Emergency Contact Person
+                                        </label>
+
+                                        <select
+                                            value={emergencyContactType}
+                                            onChange={(e) =>
+                                                setEmergencyContactType(e.target.value)
+                                            }
+                                            className="w-full border rounded-md p-3 bg-white"
+                                        >
+                                            <option value="Father">Father</option>
+                                            <option value="Mother">Mother</option>
+                                            <option value="Guardian">Guardian</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                {emergencyContactType === "Other" && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                Contact Person Name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={emergencyContactName}
+                                                onChange={(e) => setEmergencyContactName(e.target.value)}
+                                                placeholder="Enter contact person's name"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                Phone Number
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                inputMode="numeric"
+                                                value={emergencyContactPhone}
+                                                onChange={(e) =>
+                                                    setEmergencyContactPhone(
+                                                        e.target.value.replace(/\D/g, "").slice(0, 20)
+                                                    )
+                                                }
+                                                placeholder="Enter phone number"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                Alternate Phone Number
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                inputMode="numeric"
+                                                value={emergencyContactAlternatePhone}
+                                                onChange={(e) =>
+                                                    setEmergencyContactAlternatePhone(
+                                                        e.target.value.replace(/\D/g, "").slice(0, 20)
+                                                    )
+                                                }
+                                                placeholder="Enter alternate phone number"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={emergencyContactEmail}
+                                                onChange={(e) => setEmergencyContactEmail(e.target.value)}
+                                                placeholder="Enter email address"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">
+                                                Relation to Student
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={emergencyContactRelation}
+                                                onChange={(e) => setEmergencyContactRelation(e.target.value)}
+                                                placeholder="e.g. Uncle, Aunt"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-medium mb-2">
+                                                Address
+                                            </label>
+                                            <textarea
+                                                value={emergencyContactAddress}
+                                                onChange={(e) => setEmergencyContactAddress(e.target.value)}
+                                                rows={3}
+                                                placeholder="Enter contact person's address"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                            </div>
+
+
+{/* =====================================================
+    HEALTH & MEDICAL INFORMATION
+===================================================== */}
+
+<div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+  <div>
+    <h4 className="text-base font-semibold text-gray-800">
+      9. Health & Medical Information
+    </h4>
+    <p className="text-sm text-gray-500 mt-1">
+      Provide the student's health, medical, and insurance details.
+    </p>
+  </div>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <label className="block text-sm font-medium mb-2">Allergies</label>
+      <textarea
+        value={allergies}
+        onChange={(e) => setAllergies(e.target.value)}
+        rows={2}
+        placeholder="Enter any known allergies"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Medical Conditions</label>
+      <textarea
+        value={medicalConditions}
+        onChange={(e) => setMedicalConditions(e.target.value)}
+        rows={2}
+        placeholder="Enter medical conditions"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Medications</label>
+      <textarea
+        value={medications}
+        onChange={(e) => setMedications(e.target.value)}
+        rows={2}
+        placeholder="Enter current medications"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Disabilities</label>
+      <textarea
+        value={disabilities}
+        onChange={(e) => setDisabilities(e.target.value)}
+        rows={2}
+        placeholder="Enter relevant disability information, if any"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Dietary Restrictions</label>
+      <textarea
+        value={dietaryRestrictions}
+        onChange={(e) => setDietaryRestrictions(e.target.value)}
+        rows={2}
+        placeholder="Enter dietary restrictions"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Special Health Instructions</label>
+      <textarea
+        value={specialHealthInstructions}
+        onChange={(e) => setSpecialHealthInstructions(e.target.value)}
+        rows={2}
+        placeholder="Enter special health instructions"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Doctor Name</label>
+      <input
+        type="text"
+        value={doctorName}
+        onChange={(e) => setDoctorName(e.target.value)}
+        placeholder="Enter doctor's name"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Doctor Phone</label>
+      <input
+        type="tel"
+        inputMode="numeric"
+        value={doctorPhone}
+        onChange={(e) =>
+          setDoctorPhone(e.target.value.replace(/\D/g, "").slice(0, 20))
+        }
+        placeholder="Enter doctor's phone number"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium mb-2">Doctor Address</label>
+      <textarea
+        value={doctorAddress}
+        onChange={(e) => setDoctorAddress(e.target.value)}
+        rows={2}
+        placeholder="Enter doctor's address"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Insurance Provider</label>
+      <input
+        type="text"
+        value={insuranceProvider}
+        onChange={(e) => setInsuranceProvider(e.target.value)}
+        placeholder="Enter insurance provider"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium mb-2">Insurance Policy No.</label>
+      <input
+        type="text"
+        value={insurancePolicyNo}
+        onChange={(e) => setInsurancePolicyNo(e.target.value)}
+        placeholder="Enter insurance policy number"
+        className="w-full border rounded-md p-3"
+      />
+    </div>
+  </div>
+</div>
+
 
 
                         </div>
