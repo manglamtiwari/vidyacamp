@@ -20,6 +20,9 @@ type Student = {
     id: string;
     admission_no: string;
 
+    created_at: string;
+    last_updated: string;
+
     // student name is stored in the "name" field in the database
     name: string;
 
@@ -86,7 +89,7 @@ type Student = {
     section_id: string | null;
     house_id: string | null;
     stream: string | null;
-    elective_subjects: unknown;
+    elective_subjects: string[] | null;
 
     status: string | null;
 
@@ -119,6 +122,42 @@ type Student = {
     previous_school_class: string | null;
     previous_school_board: string | null;
     previous_school_tc_no: string | null;
+    remarks: string | null;
+
+
+
+    // Transport Information
+    uses_transport: boolean;
+    transport_route: string | null;
+    transport_stop: string | null;
+    pickup_point: string | null;
+    drop_point: string | null;
+    transport_fee: number | null;
+    transport_start_date: string | null;
+    transport_end_date: string | null;
+
+
+    // Hostel Information
+    uses_hostel: boolean;
+    hostel_name: string | null;
+    hostel_block: string | null;
+    hostel_room_no: string | null;
+    hostel_join_date: string | null;
+    hostel_leave_date: string | null;
+
+
+
+    // Fee & Finance Information
+    fee_category: string | null;
+    concession_type: string | null;
+    concession_percentage: number | null;
+    scholarship_name: string | null;
+    scholarship_amount: number | null;
+    bank_account_no: string | null;
+    bank_name: string | null;
+    ifsc: string | null;
+
+
 
     is_active: boolean;
 };
@@ -197,7 +236,6 @@ export default function AdminUsersPage() {
     const [teacherDob, setTeacherDob] = useState("");
 
     const [showStudentForm, setShowStudentForm] = useState(false);
-    const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
     const [admissionNo, setAdmissionNo] = useState("");
     const [studentName, setStudentName] = useState("");
 
@@ -264,6 +302,7 @@ export default function AdminUsersPage() {
     const [previousSchoolClass, setPreviousSchoolClass] = useState("");
     const [previousSchoolBoard, setPreviousSchoolBoard] = useState("");
     const [previousSchoolTcNo, setPreviousSchoolTcNo] = useState("");
+    const [remarks, setRemarks] = useState("");
 
     // Guardian Information
     const [guardianType, setGuardianType] = useState("Father");
@@ -298,6 +337,38 @@ export default function AdminUsersPage() {
     const [insurancePolicyNo, setInsurancePolicyNo] = useState("");
 
 
+    // Transport Information
+    const [usesTransport, setUsesTransport] = useState(false);
+    const [transportRoute, setTransportRoute] = useState("");
+    const [transportStop, setTransportStop] = useState("");
+    const [pickupPoint, setPickupPoint] = useState("");
+    const [dropPoint, setDropPoint] = useState("");
+    const [transportFee, setTransportFee] = useState("");
+    const [transportStartDate, setTransportStartDate] = useState("");
+    const [transportEndDate, setTransportEndDate] = useState("");
+
+    //Hostel Information
+
+    const [usesHostel, setUsesHostel] = useState(false);
+    const [hostelName, setHostelName] = useState("");
+    const [hostelBlock, setHostelBlock] = useState("");
+    const [hostelRoomNo, setHostelRoomNo] = useState("");
+    const [hostelJoinDate, setHostelJoinDate] = useState("");
+    const [hostelLeaveDate, setHostelLeaveDate] = useState("");
+
+
+    // Fee Information
+
+    const [feeCategory, setFeeCategory] = useState("");
+    const [concessionType, setConcessionType] = useState("");
+    const [concessionPercentage, setConcessionPercentage] = useState("");
+    const [scholarshipName, setScholarshipName] = useState("");
+    const [scholarshipAmount, setScholarshipAmount] = useState("");
+    const [bankAccountNo, setBankAccountNo] = useState("");
+    const [bankName, setBankName] = useState("");
+    const [ifsc, setIfsc] = useState("");
+
+
     useEffect(() => {
         async function checkAdminAccess() {
             const role = await getUserRole();
@@ -319,32 +390,67 @@ export default function AdminUsersPage() {
         checkAdminAccess();
     }, [router]);
 
+
     async function getAdminSchoolId() {
-        const {
+        // First, check the current authenticated user.
+        let {
             data: { user },
+            error: userError,
         } = await supabase.auth.getUser();
 
+        // If no user is available, try refreshing the session.
         if (!user) {
-            throw new Error("Your session has expired. Please log in again.");
+            const {
+                data: { session },
+                error: refreshError,
+            } = await supabase.auth.refreshSession();
+
+            if (refreshError) {
+                console.error("Session refresh failed:", refreshError);
+            }
+
+            if (session?.user) {
+                user = session.user;
+            }
         }
 
-        const { data: membership, error } = await supabase
-            .from("school_users")
-            .select("school_id")
-            .eq("user_id", user.id)
-            .eq("role", "admin")
-            .eq("status", "active")
-            .limit(1)
-            .maybeSingle();
+        if (userError && !user) {
+            console.error("Could not get authenticated user:", userError);
+        }
 
-        if (error) throw error;
+        if (!user) {
+            throw new Error(
+                "Your session has expired. Please log in again."
+            );
+        }
+
+        // Find the active school membership for this admin.
+        const { data: membership, error: membershipError } =
+            await supabase
+                .from("school_users")
+                .select("school_id")
+                .eq("user_id", user.id)
+                .eq("role", "admin")
+                .eq("status", "active")
+                .limit(1)
+                .maybeSingle();
+
+        if (membershipError) {
+            console.error("Could not load school membership:", membershipError);
+            throw membershipError;
+        }
 
         if (!membership) {
-            throw new Error("Could not find your active school membership.");
+            throw new Error(
+                "Could not find your active school membership."
+            );
         }
 
         return membership.school_id;
     }
+
+
+
 
     async function loadPeople() {
         setIsLoading(true);
@@ -366,6 +472,9 @@ export default function AdminUsersPage() {
                 supabase
                     .from("students")
                     .select(`
+
+                        created_at,
+last_updated,
     id,
     name,
     admission_no,
@@ -429,6 +538,7 @@ is_primary_guardian,
     house_id,
     stream,
     elective_subjects,
+    remarks,
 
     status,
     emergency_contact_type,
@@ -450,6 +560,31 @@ doctor_phone,
 doctor_address,
 insurance_provider,
 insurance_policy_no,
+
+uses_transport,
+transport_route,
+transport_stop,
+pickup_point,
+drop_point,
+transport_fee,
+transport_start_date,
+transport_end_date,
+
+uses_hostel,
+hostel_name,
+hostel_block,
+hostel_room_no,
+hostel_join_date,
+hostel_leave_date,
+
+fee_category,
+concession_type,
+concession_percentage,
+scholarship_name,
+scholarship_amount,
+bank_account_no,
+bank_name,
+ifsc,
 
     admission_date,
     admission_type,
@@ -795,14 +930,12 @@ insurance_policy_no,
         setPermanentAddress("");
         setSameAsCurrentAddress(false);
 
-
         setParentName("");
         setParentPhone("");
         setParentEmail("");
         setDateOfBirth("");
         setGender("");
-        setStudentClassId("");
-        setStudentSectionId("");
+
 
         setRegistrationNo("");
         setBloodGroup("");
@@ -814,15 +947,21 @@ insurance_policy_no,
         setStudentAadharNumber("");
         setStudentApaarIdNumber("");
 
-        setRollNumber("");
         setStream("");
         setStudentStatus("Active");
         setAdmissionDate("");
         setAdmissionType("");
+        setAcademicYearId("");
+        setRollNumber("");
         setPreviousSchoolName("");
         setPreviousSchoolClass("");
         setPreviousSchoolBoard("");
         setPreviousSchoolTcNo("");
+        setRemarks("");
+        setHouseId("");
+        setElectiveSubjects("");
+        setStudentClassId("");
+        setStudentSectionId("");
 
 
         // Father Information
@@ -865,8 +1004,6 @@ insurance_policy_no,
         setEmergencyContactRelation("");
         setEmergencyContactAddress("");
 
-
-
         setAllergies("");
         setMedicalConditions("");
         setMedications("");
@@ -879,8 +1016,31 @@ insurance_policy_no,
         setInsuranceProvider("");
         setInsurancePolicyNo("");
 
+        setUsesTransport(false);
+        setTransportRoute("");
+        setTransportStop("");
+        setPickupPoint("");
+        setDropPoint("");
+        setTransportFee("");
+        setTransportStartDate("");
+        setTransportEndDate("");
 
-        setEditingStudentId(null);
+        setUsesHostel(false);
+        setHostelName("");
+        setHostelBlock("");
+        setHostelRoomNo("");
+        setHostelJoinDate("");
+        setHostelLeaveDate("");
+
+        setFeeCategory("");
+        setConcessionType("");
+        setConcessionPercentage("");
+        setScholarshipName("");
+        setScholarshipAmount("");
+        setBankAccountNo("");
+        setBankName("");
+        setIfsc("");
+
         setShowStudentForm(false);
     }
 
@@ -927,184 +1087,6 @@ insurance_policy_no,
         setIsSaving(true);
 
         try {
-            if (editingStudentId) {
-
-                console.log("STATUS BEFORE UPDATE:", status);
-
-
-                const { error } = await supabase
-                    .from("students")
-                    .update({
-                        // Existing fields
-                        admission_no: admissionNo.trim(),
-                        name: studentName.trim(),
-                        student_email: studentEmail.trim() || null,
-                        student_phone: studentPhone.trim() || null,
-                        student_alternate_phone: studentAlternatePhone.trim() || null,
-
-                        current_address: currentAddress.trim() || null,
-                        permanent_address: permanentAddress.trim() || null,
-
-                        parent_name: parentName.trim() || null,
-                        parent_phone: parentPhone.trim() || null,
-                        parent_email: parentEmail.trim() || null,
-                        date_of_birth: dateOfBirth || null,
-                        gender: gender || null,
-                        class_id: studentClassId || null,
-                        section_id: studentSectionId || null,
-
-                        // Basic Information
-                        registration_no: registrationNo.trim() || null,
-                        aadhaar_number: studentAadharNumber.trim() || null,
-                        apaar_id: studentApaarIdNumber.trim() || null,
-                        blood_group: bloodGroup || null,
-                        nationality: nationality.trim() || null,
-                        religion: religion.trim() || null,
-                        category: category.trim() || null,
-                        caste: caste.trim() || null,
-                        mother_tongue: motherTongue.trim() || null,
-
-                        // Academic Information
-                        roll_number: rollNumber.trim() || null,
-                        stream: stream.trim() || null,
-                        status: studentStatus,
-                        // status: status || "active",
-
-
-                        // Admission Information
-                        admission_date: admissionDate || null,
-                        admission_type: admissionType || null,
-                        previous_school_name:
-                            previousSchoolName.trim() || null,
-                        previous_school_class:
-                            previousSchoolClass.trim() || null,
-                        previous_school_board:
-                            previousSchoolBoard.trim() || null,
-                        previous_school_tc_no:
-                            previousSchoolTcNo.trim() || null,
-
-                        // Father Information
-                        father_name: fatherName.trim() || null,
-                        father_phone: fatherPhone.trim() || null,
-                        father_alternate_phone:
-                            fatherAlternatePhone.trim() || null,
-                        father_email: fatherEmail.trim() || null,
-                        father_occupation: fatherOccupation.trim() || null,
-                        father_qualification: fatherQualification.trim() || null,
-                        father_aadhaar_number: fatherAadhaarNumber.trim() || null,
-                        father_annual_income: fatherAnnualIncome.trim()
-                            ? Number(fatherAnnualIncome)
-                            : null,
-
-
-                        // Mother Information
-                        mother_name: motherName.trim() || null,
-                        mother_phone: motherPhone.trim() || null,
-                        mother_alternate_phone:
-                            motherAlternatePhone.trim() || null,
-                        mother_email: motherEmail.trim() || null,
-                        mother_occupation: motherOccupation.trim() || null,
-                        mother_qualification: motherQualification.trim() || null,
-                        mother_aadhaar_number: motherAadhaarNumber.trim() || null,
-                        mother_annual_income: motherAnnualIncome.trim()
-                            ? Number(motherAnnualIncome)
-                            : null,
-
-                        guardian_type: guardianType,
-
-                        guardian_name:
-                            guardianType === "Separate Guardian"
-                                ? guardianName.trim() || null
-                                : null,
-
-                        guardian_relation:
-                            guardianType === "Separate Guardian"
-                                ? guardianRelation.trim() || null
-                                : null,
-
-                        guardian_phone:
-                            guardianType === "Separate Guardian"
-                                ? guardianPhone.trim() || null
-                                : null,
-
-                        guardian_alternate_phone:
-                            guardianType === "Separate Guardian"
-                                ? guardianAlternatePhone.trim() || null
-                                : null,
-
-                        guardian_email:
-                            guardianType === "Separate Guardian"
-                                ? guardianEmail.trim() || null
-                                : null,
-
-                        guardian_occupation:
-                            guardianType === "Separate Guardian"
-                                ? guardianOccupation.trim() || null
-                                : null,
-
-                        guardian_qualification:
-                            guardianType === "Separate Guardian"
-                                ? guardianQualification.trim() || null
-                                : null,
-
-                        guardian_address:
-                            guardianType === "Separate Guardian"
-                                ? guardianAddress.trim() || null
-                                : null,
-
-                        is_primary_guardian: isPrimaryGuardian,
-
-                        emergency_contact_type: emergencyContactType,
-                        emergency_contact_name: emergencyContactType === "Other" ? emergencyContactName : null,
-                        emergency_contact_phone: emergencyContactType === "Other" ? emergencyContactPhone : null,
-                        emergency_contact_alternate_phone: emergencyContactType === "Other" ? emergencyContactAlternatePhone : null,
-                        emergency_contact_email: emergencyContactType === "Other" ? emergencyContactEmail : null,
-                        emergency_contact_relation: emergencyContactType === "Other" ? emergencyContactRelation : null,
-                        emergency_contact_address: emergencyContactType === "Other" ? emergencyContactAddress : null,
-
-
-
-                        allergies: allergies || null,
-                        medical_conditions: medicalConditions || null,
-                        medications: medications || null,
-                        disabilities: disabilities || null,
-                        dietary_restrictions: dietaryRestrictions || null,
-                        special_health_instructions: specialHealthInstructions || null,
-                        doctor_name: doctorName || null,
-                        doctor_phone: doctorPhone || null,
-                        doctor_address: doctorAddress || null,
-                        insurance_provider: insuranceProvider || null,
-                        insurance_policy_no: insurancePolicyNo || null,
-
-
-
-                        academic_year_id: academicYearId || null,
-                        house_id: houseId || null,
-                        elective_subjects: electiveSubjects
-                            ? electiveSubjects
-                                .split(",")
-                                .map((subject) => subject.trim())
-                                .filter(Boolean)
-                            : null,
-
-                    })
-                    .eq("id", editingStudentId);
-
-                if (error) {
-                    if (error.code === "23505") {
-                        alert(
-                            "This Admission No. is already being used in this school."
-                        );
-                        return;
-                    }
-                    throw error;
-                }
-
-                alert("Student updated successfully.");
-                resetStudentForm();
-                await loadPeople();
-                return;
-            }
 
             const schoolId = await getAdminSchoolId();
 
@@ -1159,6 +1141,7 @@ insurance_policy_no,
                         previousSchoolBoard.trim() || null,
                     previous_school_tc_no:
                         previousSchoolTcNo.trim() || null,
+                    remarks: remarks.trim() || null,
 
 
                     // Father Information
@@ -1255,6 +1238,38 @@ insurance_policy_no,
 
 
 
+                    uses_transport: usesTransport,
+                    transport_route: usesTransport ? transportRoute || null : null,
+                    transport_stop: usesTransport ? transportStop || null : null,
+                    pickup_point: usesTransport ? pickupPoint || null : null,
+                    drop_point: usesTransport ? dropPoint || null : null,
+                    transport_fee: usesTransport && transportFee !== "" ? Number(transportFee) : null,
+                    transport_start_date: usesTransport ? transportStartDate || null : null,
+                    transport_end_date: usesTransport ? transportEndDate || null : null,
+
+
+
+                    uses_hostel: usesHostel,
+                    hostel_name: usesHostel ? hostelName || null : null,
+                    hostel_block: usesHostel ? hostelBlock || null : null,
+                    hostel_room_no: usesHostel ? hostelRoomNo || null : null,
+                    hostel_join_date: usesHostel ? hostelJoinDate || null : null,
+                    hostel_leave_date: usesHostel ? hostelLeaveDate || null : null,
+
+
+
+                    fee_category: feeCategory || null,
+                    concession_type: concessionType || null,
+                    concession_percentage:
+                        concessionPercentage !== "" ? Number(concessionPercentage) : null,
+                    scholarship_name: scholarshipName || null,
+                    scholarship_amount:
+                        scholarshipAmount !== "" ? Number(scholarshipAmount) : null,
+                    bank_account_no: bankAccountNo || null,
+                    bank_name: bankName || null,
+                    ifsc: ifsc.trim() ? ifsc.trim().toUpperCase() : null,
+
+
                     academic_year_id: academicYearId || null,
                     house_id: houseId || null,
                     elective_subjects: electiveSubjects
@@ -1288,136 +1303,6 @@ insurance_policy_no,
         }
     }
 
-    function handleEditStudent(student: Student) {
-        setEditingStudentId(student.id);
-
-        // Basic Information
-        setAdmissionNo(student.admission_no || "");
-        setStudentName(student.name || "");
-        setDateOfBirth(student.date_of_birth || "");
-        setGender(student.gender || "");
-
-        // Student Contact
-        setStudentEmail(student.student_email || "");
-        setStudentPhone(student.student_phone || "");
-        setStudentAlternatePhone(student.student_alternate_phone || "");
-
-        // Address
-        setCurrentAddress(student.current_address || "");
-        setPermanentAddress(student.permanent_address || "");
-        setSameAsCurrentAddress(
-            !!student.current_address &&
-            student.current_address === student.permanent_address
-        );
-
-        // Student Identification
-        setRegistrationNo(student.registration_no || "");
-        setStudentAadharNumber(student.aadhaar_number || "");
-        setStudentApaarIdNumber(student.apaar_id || "");
-        setBloodGroup(student.blood_group || "");
-        setNationality(student.nationality || "");
-        setReligion(student.religion || "");
-        setCategory(student.category || "");
-        setCaste(student.caste || "");
-        setMotherTongue(student.mother_tongue || "");
-
-        // Parent / Guardian
-        setParentName(student.parent_name || "");
-        setParentPhone(student.parent_phone || "");
-        setParentEmail(student.parent_email || "");
-
-        // Father Information
-        setFatherName(student.father_name || "");
-        setFatherPhone(student.father_phone || "");
-        setFatherAlternatePhone(student.father_alternate_phone || "");
-        setFatherEmail(student.father_email || "");
-        setFatherOccupation(student.father_occupation || "");
-        setFatherQualification(student.father_qualification || "");
-        setFatherAadhaarNumber(student.father_aadhaar_number || "");
-        setFatherAnnualIncome(
-            student.father_annual_income != null
-                ? String(student.father_annual_income)
-                : ""
-        );
-
-        // Mother Information
-        setMotherName(student.mother_name || "");
-        setMotherPhone(student.mother_phone || "");
-        setMotherAlternatePhone(student.mother_alternate_phone || "");
-        setMotherEmail(student.mother_email || "");
-        setMotherOccupation(student.mother_occupation || "");
-        setMotherQualification(student.mother_qualification || "");
-        setMotherAadhaarNumber(student.mother_aadhaar_number || "");
-
-        setMotherAnnualIncome(
-            student.mother_annual_income != null
-                ? String(student.mother_annual_income)
-                : ""
-        );
-
-        // Guardian Information
-        setGuardianType(student.guardian_type || "Father");
-        setGuardianName(student.guardian_name || "");
-        setGuardianRelation(student.guardian_relation || "");
-        setGuardianPhone(student.guardian_phone || "");
-        setGuardianAlternatePhone(student.guardian_alternate_phone || "");
-        setGuardianEmail(student.guardian_email || "");
-        setGuardianOccupation(student.guardian_occupation || "");
-        setGuardianQualification(student.guardian_qualification || "");
-        setGuardianAddress(student.guardian_address || "");
-        setIsPrimaryGuardian(student.is_primary_guardian ?? true);
-
-        // Emergency Contact Information
-        setEmergencyContactType(student.emergency_contact_type || "Father");
-        setEmergencyContactName(student.emergency_contact_name || "");
-        setEmergencyContactPhone(student.emergency_contact_phone || "");
-        setEmergencyContactAlternatePhone(student.emergency_contact_alternate_phone || "");
-        setEmergencyContactEmail(student.emergency_contact_email || "");
-        setEmergencyContactRelation(student.emergency_contact_relation || "");
-        setEmergencyContactAddress(student.emergency_contact_address || "");
-
-        // Health Information
-        setAllergies(student.allergies || "");
-        setMedicalConditions(student.medical_conditions || "");
-        setMedications(student.medications || "");
-        setDisabilities(student.disabilities || "");
-        setDietaryRestrictions(student.dietary_restrictions || "");
-        setSpecialHealthInstructions(student.special_health_instructions || "");
-        setDoctorName(student.doctor_name || "");
-        setDoctorPhone(student.doctor_phone || "");
-        setDoctorAddress(student.doctor_address || "");
-        setInsuranceProvider(student.insurance_provider || "");
-        setInsurancePolicyNo(student.insurance_policy_no || "");
-
-
-        // Academic Information
-        setAcademicYearId(student.academic_year_id || "");
-        setRollNumber(student.roll_number || "");
-        setStudentClassId(student.class_id || "");
-        setStudentSectionId(student.section_id || "");
-        setHouseId(student.house_id || "");
-        setStream(student.stream || "");
-        setElectiveSubjects(
-            Array.isArray(student.elective_subjects)
-                ? student.elective_subjects.join(", ")
-                : ""
-        );
-        setStudentStatus(student.status || "Active");
-
-        // Admission Information
-        setAdmissionDate(student.admission_date || "");
-        setAdmissionType(student.admission_type || "");
-        setPreviousSchoolName(student.previous_school_name || "");
-        setPreviousSchoolClass(student.previous_school_class || "");
-        setPreviousSchoolBoard(student.previous_school_board || "");
-        setPreviousSchoolTcNo(student.previous_school_tc_no || "");
-
-        // Show Form
-        setShowStudentForm(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-
 
     async function handleDeactivateStudent(student: Student) {
         const confirmed = window.confirm(
@@ -1426,20 +1311,41 @@ insurance_policy_no,
 
         if (!confirmed) return;
 
-        const { error } = await supabase
-            .from("students")
-            .update({ is_active: false })
-            .eq("id", student.id);
+        try {
+            const schoolId = await getAdminSchoolId();
 
-        if (error) {
+            const { data, error } = await supabase
+                .from("students")
+                .update({ is_active: false })
+                .eq("id", student.id)
+                .eq("school_id", schoolId)
+                .select("id, is_active")
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+                throw new Error(
+                    "No student record was updated. Check your school access and Supabase permissions."
+                );
+            }
+
+            if (data.is_active !== false) {
+                throw new Error("The database did not confirm deactivation.");
+            }
+
+            await loadPeople();
+            alert("Student has been deactivated successfully.");
+        } catch (error) {
             console.error("Could not deactivate student:", error);
-            alert("Could not deactivate student. Please try again.");
-            return;
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Could not deactivate student. Please try again."
+            );
         }
-
-        alert("Student has been deactivated.");
-        await loadPeople();
     }
+
 
     async function handleRestoreStudent(student: Student) {
         const confirmed = window.confirm(
@@ -1448,20 +1354,43 @@ insurance_policy_no,
 
         if (!confirmed) return;
 
-        const { error } = await supabase
-            .from("students")
-            .update({ is_active: true })
-            .eq("id", student.id);
+        try {
+            const schoolId = await getAdminSchoolId();
 
-        if (error) {
+            const { data, error } = await supabase
+                .from("students")
+                .update({ is_active: true })
+                .eq("id", student.id)
+                .eq("school_id", schoolId)
+                .select("id, is_active")
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+                throw new Error(
+                    "No student record was updated. Check your school access and Supabase permissions."
+                );
+            }
+
+            if (data.is_active !== true) {
+                throw new Error("The database did not confirm reactivation.");
+            }
+
+            await loadPeople();
+            alert("Student has been reactivated successfully.");
+        } catch (error) {
             console.error("Could not reactivate student:", error);
-            alert("Could not reactivate student. Please try again.");
-            return;
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Could not reactivate student. Please try again."
+            );
         }
-
-        alert("Student has been reactivated.");
-        await loadPeople();
     }
+
+
+
 
     if (isCheckingAccess) {
         return (
@@ -1659,15 +1588,23 @@ insurance_policy_no,
             { }
             {showStudentForm && activeTab === "students" && (
                 <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-                    <h2 className="text-xl font-semibold">
-                        {editingStudentId ? "Edit Student" : "Add Student"}
-                    </h2>
 
-                    <p className="text-gray-500 mt-1">
-                        {editingStudentId
-                            ? "Update student information."
-                            : "Add student information to your school."}
-                    </p>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div>
+
+
+                            <h2 className="text-xl font-semibold">Add Student</h2>
+
+                            <p className="text-gray-500 mt-1">
+                                Add student information to your school.
+                            </p>
+
+
+                        </div>
+
+
+                    </div>
+
 
                     <form onSubmit={handleSaveStudent} className="mt-6">
 
@@ -2189,6 +2126,23 @@ insurance_policy_no,
                                     className="w-full border rounded-md p-3"
                                 />
                             </div>
+
+
+                            {/* Remarks */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium mb-2">
+                                    Remarks
+                                </label>
+
+                                <textarea
+                                    value={remarks}
+                                    onChange={(e) => setRemarks(e.target.value)}
+                                    placeholder="Add any comments or administrative notes about the student..."
+                                    rows={3}
+                                    className="w-full border rounded-md p-3 resize-y"
+                                />
+                            </div>
+
 
                         </div>
 
@@ -3031,155 +2985,469 @@ insurance_policy_no,
                             </div>
 
 
-{/* =====================================================
+                            {/* =====================================================
     HEALTH & MEDICAL INFORMATION
 ===================================================== */}
 
-<div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
-  <div>
-    <h4 className="text-base font-semibold text-gray-800">
-      9. Health & Medical Information
-    </h4>
-    <p className="text-sm text-gray-500 mt-1">
-      Provide the student's health, medical, and insurance details.
-    </p>
-  </div>
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+                                <div>
+                                    <h4 className="text-base font-semibold text-gray-800">
+                                        9. Health & Medical Information
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Provide the student's health, medical, and insurance details.
+                                    </p>
+                                </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div>
-      <label className="block text-sm font-medium mb-2">Allergies</label>
-      <textarea
-        value={allergies}
-        onChange={(e) => setAllergies(e.target.value)}
-        rows={2}
-        placeholder="Enter any known allergies"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Allergies</label>
+                                        <textarea
+                                            value={allergies}
+                                            onChange={(e) => setAllergies(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter any known allergies"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Medical Conditions</label>
-      <textarea
-        value={medicalConditions}
-        onChange={(e) => setMedicalConditions(e.target.value)}
-        rows={2}
-        placeholder="Enter medical conditions"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Medical Conditions</label>
+                                        <textarea
+                                            value={medicalConditions}
+                                            onChange={(e) => setMedicalConditions(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter medical conditions"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Medications</label>
-      <textarea
-        value={medications}
-        onChange={(e) => setMedications(e.target.value)}
-        rows={2}
-        placeholder="Enter current medications"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Medications</label>
+                                        <textarea
+                                            value={medications}
+                                            onChange={(e) => setMedications(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter current medications"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Disabilities</label>
-      <textarea
-        value={disabilities}
-        onChange={(e) => setDisabilities(e.target.value)}
-        rows={2}
-        placeholder="Enter relevant disability information, if any"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Disabilities</label>
+                                        <textarea
+                                            value={disabilities}
+                                            onChange={(e) => setDisabilities(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter relevant disability information, if any"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Dietary Restrictions</label>
-      <textarea
-        value={dietaryRestrictions}
-        onChange={(e) => setDietaryRestrictions(e.target.value)}
-        rows={2}
-        placeholder="Enter dietary restrictions"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Dietary Restrictions</label>
+                                        <textarea
+                                            value={dietaryRestrictions}
+                                            onChange={(e) => setDietaryRestrictions(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter dietary restrictions"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Special Health Instructions</label>
-      <textarea
-        value={specialHealthInstructions}
-        onChange={(e) => setSpecialHealthInstructions(e.target.value)}
-        rows={2}
-        placeholder="Enter special health instructions"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Special Health Instructions</label>
+                                        <textarea
+                                            value={specialHealthInstructions}
+                                            onChange={(e) => setSpecialHealthInstructions(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter special health instructions"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Doctor Name</label>
-      <input
-        type="text"
-        value={doctorName}
-        onChange={(e) => setDoctorName(e.target.value)}
-        placeholder="Enter doctor's name"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Doctor Name</label>
+                                        <input
+                                            type="text"
+                                            value={doctorName}
+                                            onChange={(e) => setDoctorName(e.target.value)}
+                                            placeholder="Enter doctor's name"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Doctor Phone</label>
-      <input
-        type="tel"
-        inputMode="numeric"
-        value={doctorPhone}
-        onChange={(e) =>
-          setDoctorPhone(e.target.value.replace(/\D/g, "").slice(0, 20))
-        }
-        placeholder="Enter doctor's phone number"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Doctor Phone</label>
+                                        <input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            value={doctorPhone}
+                                            onChange={(e) =>
+                                                setDoctorPhone(e.target.value.replace(/\D/g, "").slice(0, 20))
+                                            }
+                                            placeholder="Enter doctor's phone number"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div className="md:col-span-2">
-      <label className="block text-sm font-medium mb-2">Doctor Address</label>
-      <textarea
-        value={doctorAddress}
-        onChange={(e) => setDoctorAddress(e.target.value)}
-        rows={2}
-        placeholder="Enter doctor's address"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium mb-2">Doctor Address</label>
+                                        <textarea
+                                            value={doctorAddress}
+                                            onChange={(e) => setDoctorAddress(e.target.value)}
+                                            rows={2}
+                                            placeholder="Enter doctor's address"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Insurance Provider</label>
-      <input
-        type="text"
-        value={insuranceProvider}
-        onChange={(e) => setInsuranceProvider(e.target.value)}
-        placeholder="Enter insurance provider"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Insurance Provider</label>
+                                        <input
+                                            type="text"
+                                            value={insuranceProvider}
+                                            onChange={(e) => setInsuranceProvider(e.target.value)}
+                                            placeholder="Enter insurance provider"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
 
-    <div>
-      <label className="block text-sm font-medium mb-2">Insurance Policy No.</label>
-      <input
-        type="text"
-        value={insurancePolicyNo}
-        onChange={(e) => setInsurancePolicyNo(e.target.value)}
-        placeholder="Enter insurance policy number"
-        className="w-full border rounded-md p-3"
-      />
-    </div>
-  </div>
-</div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Insurance Policy No.</label>
+                                        <input
+                                            type="text"
+                                            value={insurancePolicyNo}
+                                            onChange={(e) => setInsurancePolicyNo(e.target.value)}
+                                            placeholder="Enter insurance policy number"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
+
+
+                            {/* =====================================================
+    TRANSPORT INFORMATION
+===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+                                <div>
+                                    <h4 className="text-base font-semibold text-gray-800">
+                                        10. Transport Information
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Provide the student's school transport details.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        id="usesTransport"
+                                        type="checkbox"
+                                        checked={usesTransport}
+                                        onChange={(e) => setUsesTransport(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <label htmlFor="usesTransport" className="text-sm font-medium">
+                                        Uses Transport
+                                    </label>
+                                </div>
+
+                                {usesTransport && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Route</label>
+                                            <input
+                                                type="text"
+                                                value={transportRoute}
+                                                onChange={(e) => setTransportRoute(e.target.value)}
+                                                placeholder="Enter transport route"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Stop</label>
+                                            <input
+                                                type="text"
+                                                value={transportStop}
+                                                onChange={(e) => setTransportStop(e.target.value)}
+                                                placeholder="Enter transport stop"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Pickup Point</label>
+                                            <input
+                                                type="text"
+                                                value={pickupPoint}
+                                                onChange={(e) => setPickupPoint(e.target.value)}
+                                                placeholder="Enter pickup point"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Drop Point</label>
+                                            <input
+                                                type="text"
+                                                value={dropPoint}
+                                                onChange={(e) => setDropPoint(e.target.value)}
+                                                placeholder="Enter drop point"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Transport Fee</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={transportFee}
+                                                onChange={(e) => setTransportFee(e.target.value)}
+                                                placeholder="Enter transport fee"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Start Date</label>
+                                            <input
+                                                type="date"
+                                                value={transportStartDate}
+                                                onChange={(e) => setTransportStartDate(e.target.value)}
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">End Date</label>
+                                            <input
+                                                type="date"
+                                                value={transportEndDate}
+                                                onChange={(e) => setTransportEndDate(e.target.value)}
+                                                min={transportStartDate || undefined}
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+
+
+
+                            {/* =====================================================
+    HOSTEL INFORMATION
+===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+                                <div>
+                                    <h4 className="text-base font-semibold text-gray-800">
+                                        11. Hostel Information
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Provide the student's hostel accommodation details.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        id="usesHostel"
+                                        type="checkbox"
+                                        checked={usesHostel}
+                                        onChange={(e) => setUsesHostel(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300"
+                                    />
+                                    <label htmlFor="usesHostel" className="text-sm font-medium">
+                                        Uses Hostel
+                                    </label>
+                                </div>
+
+                                {usesHostel && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Hostel</label>
+                                            <input
+                                                type="text"
+                                                value={hostelName}
+                                                onChange={(e) => setHostelName(e.target.value)}
+                                                placeholder="Enter hostel name"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Block</label>
+                                            <input
+                                                type="text"
+                                                value={hostelBlock}
+                                                onChange={(e) => setHostelBlock(e.target.value)}
+                                                placeholder="Enter block"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Room No.</label>
+                                            <input
+                                                type="text"
+                                                value={hostelRoomNo}
+                                                onChange={(e) => setHostelRoomNo(e.target.value)}
+                                                placeholder="Enter room number"
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Join Date</label>
+                                            <input
+                                                type="date"
+                                                value={hostelJoinDate}
+                                                onChange={(e) => setHostelJoinDate(e.target.value)}
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium mb-2">Leave Date</label>
+                                            <input
+                                                type="date"
+                                                value={hostelLeaveDate}
+                                                onChange={(e) => setHostelLeaveDate(e.target.value)}
+                                                min={hostelJoinDate || undefined}
+                                                className="w-full border rounded-md p-3"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+
+
+
+                            {/* =====================================================
+    FEE & FINANCE INFORMATION
+===================================================== */}
+
+                            <div className="col-span-1 md:col-span-2 border-t pt-6 mt-4 mb-1 space-y-4">
+                                <div>
+                                    <h4 className="text-base font-semibold text-gray-800">
+                                        12. Fee & Finance Information
+                                    </h4>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Provide the student's fee, concession, scholarship, and bank details.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Fee Category</label>
+                                        <input
+                                            type="text"
+                                            value={feeCategory}
+                                            onChange={(e) => setFeeCategory(e.target.value)}
+                                            placeholder="Enter fee category"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Concession Type</label>
+                                        <input
+                                            type="text"
+                                            value={concessionType}
+                                            onChange={(e) => setConcessionType(e.target.value)}
+                                            placeholder="Enter concession type"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Concession %</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.01"
+                                            value={concessionPercentage}
+                                            onChange={(e) => setConcessionPercentage(e.target.value)}
+                                            placeholder="Enter concession percentage"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Scholarship Name</label>
+                                        <input
+                                            type="text"
+                                            value={scholarshipName}
+                                            onChange={(e) => setScholarshipName(e.target.value)}
+                                            placeholder="Enter scholarship name"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Scholarship Amount</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={scholarshipAmount}
+                                            onChange={(e) => setScholarshipAmount(e.target.value)}
+                                            placeholder="Enter scholarship amount"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Bank Account No.</label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={bankAccountNo}
+                                            onChange={(e) => setBankAccountNo(e.target.value)}
+                                            placeholder="Enter bank account number"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Bank Name</label>
+                                        <input
+                                            type="text"
+                                            value={bankName}
+                                            onChange={(e) => setBankName(e.target.value)}
+                                            placeholder="Enter bank name"
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">IFSC</label>
+                                        <input
+                                            type="text"
+                                            value={ifsc}
+                                            onChange={(e) => setIfsc(e.target.value.toUpperCase())}
+                                            placeholder="Enter IFSC code"
+                                            maxLength={11}
+                                            className="w-full border rounded-md p-3"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            {/* For further sections. To be implemented */}
 
 
                         </div>
-
-
-
-
-
 
 
                         {/* ===================================================== */}
@@ -3201,11 +3469,8 @@ insurance_policy_no,
                                 disabled={isSaving}
                                 className="bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
                             >
-                                {isSaving
-                                    ? "Saving..."
-                                    : editingStudentId
-                                        ? "Update Student"
-                                        : "Save Student"}
+                                {isSaving ? "Saving..." : "Save Student"}
+
                             </button>
 
                         </div>
@@ -3666,22 +3931,26 @@ insurance_policy_no,
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[1500px]">
+                                    <table className="w-full min-w-[1000px]">
+                                          {/* <table className="w-full min-w-[1500px]"> */}
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th className="text-left p-4">Admission No.</th>
                                                 <th className="text-left p-4">Student Name</th>
-                                                <th className="text-left p-4">Student Email</th>
+                                                {/* <th className="text-left p-4">Student Email</th> */}
                                                 <th className="text-left p-4">Student Phone</th>
                                                 <th className="text-left p-4">Parent Name</th>
                                                 <th className="text-left p-4">Parent Phone</th>
-                                                <th className="text-left p-4">Parent Email</th>
-                                                <th className="text-left p-4">Date of Birth</th>
-                                                <th className="text-left p-4">Gender</th>
+                                                {/* <th className="text-left p-4">Parent Email</th> */}
+                                                {/* <th className="text-left p-4">Date of Birth</th> */}
+                                                {/* <th className="text-left p-4">Gender</th> */}
                                                 <th className="text-left p-4">Class</th>
                                                 <th className="text-left p-4">Section</th>
                                                 <th className="text-left p-4">Status</th>
-                                                <th className="text-right p-4">Actions</th>
+                                                {/* <th className="text-right p-4">Actions</th> */}
+                                                <th className="sticky right-0 z-20 bg-gray-50 text-right p-4 whitespace-nowrap">
+    Actions
+</th>
                                             </tr>
                                         </thead>
 
@@ -3748,9 +4017,9 @@ insurance_policy_no,
                                                             <td className="p-4 font-medium">
                                                                 {student.name}
                                                             </td>
-                                                            <td className="p-4">
+                                                            {/* <td className="p-4">
                                                                 {student.student_email || "-"}
-                                                            </td>
+                                                            </td> */}
                                                             <td className="p-4">
                                                                 {student.student_phone || "-"}
                                                             </td>
@@ -3760,15 +4029,15 @@ insurance_policy_no,
                                                             <td className="p-4">
                                                                 {student.parent_phone || "-"}
                                                             </td>
-                                                            <td className="p-4">
+                                                            {/* <td className="p-4">
                                                                 {student.parent_email || "-"}
-                                                            </td>
-                                                            <td className="p-4">
+                                                            </td> */}
+                                                            {/* <td className="p-4">
                                                                 {formatDateOfBirth(student.date_of_birth)}
-                                                            </td>
-                                                            <td className="p-4">
+                                                            </td> */}
+                                                            {/* <td className="p-4">
                                                                 {student.gender || "-"}
-                                                            </td>
+                                                            </td> */}
                                                             <td className="p-4">
                                                                 {classItem?.name || "-"}
                                                             </td>
@@ -3788,17 +4057,32 @@ insurance_policy_no,
                                                                         : "Inactive"}
                                                                 </span>
                                                             </td>
-                                                            <td className="p-4">
+                                                            {/* <td className="p-4"> */}
+                                                                <td className="sticky right-0 z-10 bg-white p-4 whitespace-nowrap">
                                                                 <div className="flex justify-end gap-2">
+
+
                                                                     <button
                                                                         type="button"
                                                                         onClick={() =>
-                                                                            handleEditStudent(student)
+                                                                            router.push(`/admin/students/${student.id}`)
+                                                                        }
+                                                                        className="px-4 py-2 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                                                                    >
+                                                                        View Profile
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            router.push(`/admin/students/${student.id}/edit`)
                                                                         }
                                                                         className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
                                                                     >
                                                                         Edit
                                                                     </button>
+
+
 
                                                                     {student.is_active ? (
                                                                         <button
