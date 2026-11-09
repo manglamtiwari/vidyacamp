@@ -1,115 +1,193 @@
+
 "use client";
 
-// import { supabase } from "@/lib/supabase";
 import { createClient } from "@/lib/supabase/client";
-const supabase = createClient();
-
+import { getCurrentSchoolMembership } from "@/lib/getCurrentSchoolMembership";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SyntheticEvent } from "react";
 import { isValidEmail } from "@/lib/validations";
 
+const supabase = createClient();
+
 export default function LoginPage() {
     const router = useRouter();
 
-    const [email, setEmail] = useState("");
-    const [emailValidation, setEmailValidation] = useState("");
+    const [identifier, setIdentifier] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+
+    const [identifierValidation, setIdentifierValidation] = useState("");
+    const [usernameValidation, setUsernameValidation] = useState("");
     const [passwordValidation, setPasswordValidation] = useState("");
     const [loginError, setLoginError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const isEmailLogin = identifier.includes("@");
+
     async function handleLogin(e: SyntheticEvent<HTMLFormElement>) {
         e.preventDefault();
 
-        setEmailValidation("");
+        setIdentifierValidation("");
+        setUsernameValidation("");
         setPasswordValidation("");
         setLoginError("");
 
+        const loginId = identifier.trim();
         let hasError = false;
 
-        if (!isValidEmail(email)) {
-            setEmailValidation("Please enter a valid email address.");
+        if (!loginId) {
+            setIdentifierValidation("Please enter your email or school code.");
+            hasError = true;
+        } else if (isEmailLogin && !isValidEmail(loginId)) {
+            setIdentifierValidation("Please enter a valid email address.");
             hasError = true;
         }
 
-
-        if (password.trim() === "") {
-            setPasswordValidation("Please enter a valid password.");
+        if (!isEmailLogin && !username.trim()) {
+            setUsernameValidation("Please enter your username.");
             hasError = true;
         }
 
-        if (hasError) {
-            return;
+        if (!password.trim()) {
+            setPasswordValidation("Please enter your password.");
+            hasError = true;
         }
+
+        if (hasError) return;
 
         setIsSubmitting(true);
 
-        const {
-            data,
-            error,
-        } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            let loginEmail = loginId;
 
-        if (error) {
-            setIsSubmitting(false);
-            setLoginError(error.message);
-            return;
-        }
+            // Student login: resolve school code + username to internal email.
+            if (!isEmailLogin) {
+                const response = await fetch("/api/auth/student-login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        schoolCode: loginId,
+                        username: username.trim(),
+                    }),
+                });
 
-        if (!data.user) {
-            setIsSubmitting(false);
-            setLoginError("Login failed. Please try again.");
-            return;
-        }
+                const result = await response.json();
 
-        const { data: membership, error: membershipError } =
-            await supabase
-                .from("school_users")
-                .select("role, status")
-                .eq("user_id", data.user.id)
-                .eq("status", "active")
-                .limit(1)
-                .maybeSingle();
+                if (!response.ok || !result.email) {
+                    setLoginError(
+                        result.error || "Invalid login details."
+                    );
+                    setIsSubmitting(false);
+                    return;
+                }
 
-        if (membershipError) {
-            console.error(
-                "Could not load user role:",
-                membershipError
-            );
+                loginEmail = result.email;
+            }
 
-            setIsSubmitting(false);
-            setLoginError("Could not load your account role. Please try again.");
-            return;
-        }
+            // Authenticate using Supabase.
+            const { data, error } =
+                await supabase.auth.signInWithPassword({
+                    email: loginEmail,
+                    password,
+                });
 
-        if (!membership) {
-            setIsSubmitting(false);
-            setLoginError(
-                "Your account is not associated with an active school."
-            );
-            return;
-        }
+            if (error || !data.user) {
+                setLoginError("Invalid login details. Please try again.");
+                setIsSubmitting(false);
+                return;
+            }
 
-        if (membership.role === "admin") {
-            router.push("/admin/dashboard");
-            return;
-        }
+            // Identify the user's active school membership.
+            const {
+                membership,
+                error: membershipError,
+            } = await getCurrentSchoolMembership();
 
-        if (membership.role === "teacher") {
-            router.push("/teacher/dashboard");
-            return;
-        }
+            if (membershipError || !membership) {
+                await supabase.auth.signOut();
+                setLoginError(
+                    membershipError || "Could not load your membership."
+                );
+                setIsSubmitting(false);
+                return;
+            }
 
-        if (membership.role === "student") {
-            router.push("/student/dashboard");
-            return;
-        }
+            if (membership.role === "admin") {
+                router.push("/admin/dashboard");
+                return;
+            }
 
+            if (membership.role === "teacher") {
+                router.push("/teacher/dashboard");
+                return;
+            }
+
+            // if (membership.role === "student") {
+            //     router.push("/student/dashboard");
+            //     return;
+            // }
+
+            if (membership.role === "student") {
+    // Get the authenticated student's session.
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+        await supabase.auth.signOut();
+        setLoginError("Session not found. Please try again.");
         setIsSubmitting(false);
-        setLoginError("Your account has an invalid role.");
+        return;
+    }
+
+    // Check whether the student must change the temporary password.
+    const response = await fetch(
+        "/api/auth/student/change-password-complete",
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${session.access_token}`,
+            },
+            cache: "no-store",
+        }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        await supabase.auth.signOut();
+        setLoginError(
+            result.error || "Could not verify student account."
+        );
+        setIsSubmitting(false);
+        return;
+    }
+
+    if (result.mustChangePassword) {
+        router.replace("/student/change-password");
+        return;
+    }
+
+    router.replace("/student/dashboard");
+    return;
+}
+
+            if (membership.role === "parent") {
+                router.push("/parent/dashboard");
+                return;
+            }
+
+            await supabase.auth.signOut();
+            setLoginError("Your account has an invalid role.");
+            setIsSubmitting(false);
+        } catch (error) {
+            console.error("Login failed:", error);
+            setLoginError("Unable to login. Please try again.");
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -117,37 +195,63 @@ export default function LoginPage() {
             <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
                 <form noValidate onSubmit={handleLogin}>
                     <h1 className="text-3xl font-bold text-center mb-6">
-                        Login Page
+                        Login
                     </h1>
 
                     <div className="mb-4">
                         <label
-                            htmlFor="email"
+                            htmlFor="identifier"
                             className="block text-sm font-medium mb-2"
                         >
-                            Email
+                            Email / School Code
                         </label>
 
                         <input
-                            id="email"
-                            type="email"
-                            placeholder="Enter Email address"
+                            id="identifier"
+                            type="text"
+                            placeholder="Enter email or school code"
                             className="w-full border rounded-md p-3"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
                         />
 
-                        {emailValidation && (
+                        {identifierValidation && (
                             <p className="text-red-500 text-sm mt-1">
-                                {emailValidation}
+                                {identifierValidation}
                             </p>
                         )}
                     </div>
 
+                    {!isEmailLogin && identifier.trim() !== "" && (
+                        <div className="mb-4">
+                            <label
+                                htmlFor="username"
+                                className="block text-sm font-medium mb-2"
+                            >
+                                Student Username
+                            </label>
+
+                            <input
+                                id="username"
+                                type="text"
+                                placeholder="Enter student username"
+                                className="w-full border rounded-md p-3"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                            />
+
+                            {usernameValidation && (
+                                <p className="text-red-500 text-sm mt-1">
+                                    {usernameValidation}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     <div className="mb-4">
                         <label
                             htmlFor="password"
-                            className="block text-sm font-medium mb-2 mt-4"
+                            className="block text-sm font-medium mb-2"
                         >
                             Password
                         </label>
@@ -155,7 +259,7 @@ export default function LoginPage() {
                         <input
                             id="password"
                             type="password"
-                            placeholder="Enter Password"
+                            placeholder="Enter password"
                             className="w-full border rounded-md p-3"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

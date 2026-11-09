@@ -158,8 +158,28 @@ type Student = {
     ifsc: string | null;
 
 
+    user_id: string | null;
+    login_username: string | null;
+    must_change_password: boolean;
+
 
     is_active: boolean;
+};
+
+type GeneratedCredential = {
+    studentId: string;
+    studentName: string;
+    schoolCode: string;
+    username: string;
+    temporaryPassword: string;
+};
+
+type CredentialModalData = {
+    credentials: GeneratedCredential[];
+    failures: {
+        studentName: string;
+        error: string;
+    }[];
 };
 
 
@@ -226,6 +246,18 @@ export default function AdminUsersPage() {
     const [isCheckingAccess, setIsCheckingAccess] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    // student id generate
+
+    const [generatingStudentId, setGeneratingStudentId] = useState<string | null>(null);
+    const [regeneratingStudentId, setRegeneratingStudentId] = useState<string | null>(null);
+    const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+    const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+
+    const [selectedAccountStudentIds, setSelectedAccountStudentIds] = useState<string[]>([]);
+    const [isBulkRegenerating, setIsBulkRegenerating] = useState(false);
+
+    const [credentialModalData, setCredentialModalData] =
+        useState<CredentialModalData | null>(null);
 
     const [showTeacherForm, setShowTeacherForm] = useState(false);
     const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
@@ -367,6 +399,7 @@ export default function AdminUsersPage() {
     const [bankAccountNo, setBankAccountNo] = useState("");
     const [bankName, setBankName] = useState("");
     const [ifsc, setIfsc] = useState("");
+
 
 
     useEffect(() => {
@@ -592,7 +625,12 @@ ifsc,
     previous_school_class,
     previous_school_board,
     previous_school_tc_no,
-    is_active
+    is_active,
+
+    user_id,
+login_username,
+must_change_password
+
 `)
 
                     .eq("school_id", schoolId)
@@ -1302,6 +1340,685 @@ ifsc,
             setIsSaving(false);
         }
     }
+
+
+    function isStudentAccountEligible(student: Student) {
+        const className =
+            classes.find((item) => item.id === student.class_id)?.name || "";
+
+        const normalized = className.trim().toLowerCase();
+
+        return (
+            student.is_active &&
+            !student.user_id &&
+            !student.login_username &&
+            !/\b(nursery|lkg|ukg|kg|kindergarten)\b/.test(normalized) &&
+            /\b(10|[1-9])\b/.test(normalized)
+        );
+    }
+
+    function getVisibleEligibleStudents() {
+        const search = studentSearch.toLowerCase().trim();
+
+        return students.filter((student) => {
+            const matchesSearch =
+                !search ||
+                student.admission_no.toLowerCase().includes(search) ||
+                student.name.toLowerCase().includes(search) ||
+                (student.student_email || "").toLowerCase().includes(search) ||
+                (student.student_phone || "").toLowerCase().includes(search) ||
+                (student.parent_name || "").toLowerCase().includes(search) ||
+                (student.parent_phone || "").toLowerCase().includes(search) ||
+                (student.parent_email || "").toLowerCase().includes(search);
+
+            const matchesDob =
+                !studentDobFilter ||
+                student.date_of_birth === studentDobFilter;
+
+            const matchesGender =
+                studentGenderFilter === "all" ||
+                student.gender === studentGenderFilter;
+
+            const matchesClass =
+                studentClassFilter === "all" ||
+                student.class_id === studentClassFilter;
+
+            const matchesSection =
+                studentSectionFilter === "all" ||
+                sections.find((section) => section.id === student.section_id)?.name ===
+                studentSectionFilter;
+
+            const matchesStatus =
+                studentStatusFilter === "all" ||
+                (studentStatusFilter === "active" && student.is_active) ||
+                (studentStatusFilter === "inactive" && !student.is_active);
+
+            return (
+                matchesSearch &&
+                matchesDob &&
+                matchesGender &&
+                matchesClass &&
+                matchesSection &&
+                matchesStatus &&
+                isStudentAccountEligible(student)
+            );
+        });
+    }
+
+
+
+    function getVisibleStudentsWithAccounts() {
+        const search = studentSearch.toLowerCase().trim();
+
+        return students.filter((student) => {
+            const className =
+                classes.find((item) => item.id === student.class_id)?.name || "";
+
+            const normalized = className.trim().toLowerCase();
+
+            const isEligibleClass =
+                !/\b(nursery|lkg|ukg|kg|kindergarten)\b/.test(normalized) &&
+                /\b(10|[1-9])\b/.test(normalized);
+
+            const matchesSearch =
+                !search ||
+                student.admission_no.toLowerCase().includes(search) ||
+                student.name.toLowerCase().includes(search) ||
+                (student.student_email || "").toLowerCase().includes(search) ||
+                (student.student_phone || "").toLowerCase().includes(search) ||
+                (student.parent_name || "").toLowerCase().includes(search) ||
+                (student.parent_phone || "").toLowerCase().includes(search) ||
+                (student.parent_email || "").toLowerCase().includes(search);
+
+            const matchesDob =
+                !studentDobFilter ||
+                student.date_of_birth === studentDobFilter;
+
+            const matchesGender =
+                studentGenderFilter === "all" ||
+                student.gender === studentGenderFilter;
+
+            const matchesClass =
+                studentClassFilter === "all" ||
+                student.class_id === studentClassFilter;
+
+            const matchesSection =
+                studentSectionFilter === "all" ||
+                sections.find((section) => section.id === student.section_id)?.name ===
+                studentSectionFilter;
+
+            const matchesStatus =
+                studentStatusFilter === "all" ||
+                (studentStatusFilter === "active" && student.is_active) ||
+                (studentStatusFilter === "inactive" && !student.is_active);
+
+            return (
+                student.is_active &&
+                !!student.user_id &&
+                !!student.login_username &&
+                isEligibleClass &&
+                matchesSearch &&
+                matchesDob &&
+                matchesGender &&
+                matchesClass &&
+                matchesSection &&
+                matchesStatus
+            );
+        });
+    }
+
+    function toggleAccountStudentSelection(studentId: string) {
+        setSelectedAccountStudentIds((current) =>
+            current.includes(studentId)
+                ? current.filter((id) => id !== studentId)
+                : [...current, studentId]
+        );
+    }
+
+    function toggleSelectAllStudentsWithAccounts() {
+        const visibleIds = getVisibleStudentsWithAccounts().map(
+            (student) => student.id
+        );
+
+        const allVisibleSelected =
+            visibleIds.length > 0 &&
+            visibleIds.every((id) => selectedAccountStudentIds.includes(id));
+
+        setSelectedAccountStudentIds((current) =>
+            allVisibleSelected
+                ? current.filter((id) => !visibleIds.includes(id))
+                : Array.from(new Set([...current, ...visibleIds]))
+        );
+    }
+
+
+    function toggleStudentSelection(studentId: string) {
+        setSelectedStudentIds((current) =>
+            current.includes(studentId)
+                ? current.filter((id) => id !== studentId)
+                : [...current, studentId]
+        );
+    }
+
+    function toggleSelectAllEligibleStudents() {
+        const visibleIds = getVisibleEligibleStudents().map((student) => student.id);
+        const allVisibleSelected =
+            visibleIds.length > 0 &&
+            visibleIds.every((id) => selectedStudentIds.includes(id));
+
+        setSelectedStudentIds((current) =>
+            allVisibleSelected
+                ? current.filter((id) => !visibleIds.includes(id))
+                : Array.from(new Set([...current, ...visibleIds]))
+        );
+    }
+
+    function toggleSelectAllSelectableStudents() {
+        const eligibleIds = getVisibleEligibleStudents().map(
+            (student) => student.id
+        );
+
+        const accountIds = getVisibleStudentsWithAccounts().map(
+            (student) => student.id
+        );
+
+        const allSelected =
+            eligibleIds.every((id) => selectedStudentIds.includes(id)) &&
+            accountIds.every((id) => selectedAccountStudentIds.includes(id)) &&
+            eligibleIds.length + accountIds.length > 0;
+
+        if (allSelected) {
+            setSelectedStudentIds((current) =>
+                current.filter((id) => !eligibleIds.includes(id))
+            );
+
+            setSelectedAccountStudentIds((current) =>
+                current.filter((id) => !accountIds.includes(id))
+            );
+        } else {
+            setSelectedStudentIds((current) =>
+                Array.from(new Set([...current, ...eligibleIds]))
+            );
+
+            setSelectedAccountStudentIds((current) =>
+                Array.from(new Set([...current, ...accountIds]))
+            );
+        }
+    }
+
+
+
+    function copyAllCredentials() {
+        if (!credentialModalData?.credentials.length) return;
+
+        const text = credentialModalData.credentials
+            .map((item) =>
+                `Student: ${item.studentName}\n` +
+                `School Code: ${item.schoolCode}\n` +
+                `Username: ${item.username}\n` +
+                `Temporary Password: ${item.temporaryPassword}`
+            )
+            .join("\n\n----------------------\n\n");
+
+        navigator.clipboard.writeText(text).catch((error) => {
+            console.error("Could not copy credentials:", error);
+        });
+    }
+
+    function copySingleCredential(item: GeneratedCredential) {
+        const text =
+            `Student: ${item.studentName}\n` +
+            `School Code: ${item.schoolCode}\n` +
+            `Username: ${item.username}\n` +
+            `Temporary Password: ${item.temporaryPassword}`;
+
+        navigator.clipboard.writeText(text).catch((error) => {
+            console.error("Could not copy credentials:", error);
+        });
+    }
+
+    function downloadCredentialsCSV() {
+        if (!credentialModalData?.credentials.length) return;
+
+        const confirmed = window.confirm(
+            "This CSV contains temporary passwords in plain text. Store it securely and delete it after distributing the credentials. Continue?"
+        );
+
+        if (!confirmed) return;
+
+        const headers = [
+            "Student Name",
+            "School Code",
+            "Username",
+            "Temporary Password",
+        ];
+
+        const escapeCSV = (value: string) =>
+            `"${value.replace(/"/g, '""')}"`;
+
+        const rows = credentialModalData.credentials.map((item) => [
+            item.studentName,
+            item.schoolCode,
+            item.username,
+            item.temporaryPassword,
+        ]);
+
+        const csv = [
+            headers.map(escapeCSV).join(","),
+            ...rows.map((row) => row.map(escapeCSV).join(",")),
+        ].join("\r\n");
+
+        const blob = new Blob(["\uFEFF" + csv], {
+            type: "text/csv;charset=utf-8;",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = `student-credentials-${new Date().toISOString().slice(0, 10)}.csv`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+    }
+
+
+
+    async function handleGenerateStudentAccount(student: Student) {
+        if (!student.is_active) {
+            alert("Activate this student before generating an account.");
+            return;
+        }
+
+        if (student.user_id || student.login_username) {
+            alert("This student already has login details.");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Generate a student login account for ${student.name}?`
+        );
+
+        if (!confirmed) return;
+
+        setGeneratingStudentId(student.id);
+
+        try {
+            const {
+                data: { session },
+                error: sessionError,
+            } = await supabase.auth.getSession();
+
+            if (sessionError || !session?.access_token) {
+                throw new Error("Your session has expired. Please log in again.");
+            }
+
+            const response = await fetch(
+                "/api/admin/generate-student-accounts",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        studentId: student.id,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "Account generation failed."
+                );
+            }
+
+            const credentials = result.credentials;
+
+            // alert(
+            //     `Student account created successfully!\n\n` +
+            //     `Student: ${credentials.studentName}\n` +
+            //     `School Code: ${credentials.schoolCode}\n` +
+            //     `Username: ${credentials.username}\n` +
+            //     `Temporary Password: ${credentials.temporaryPassword}\n\n` +
+            //     `Please save these credentials. The student should change the password after the first login.`
+            // );
+
+            setCredentialModalData({
+                credentials: [
+                    {
+                        studentId: student.id,
+                        studentName: credentials.studentName,
+                        schoolCode: credentials.schoolCode,
+                        username: credentials.username,
+                        temporaryPassword: credentials.temporaryPassword,
+                    },
+                ],
+                failures: [],
+            });
+
+            await loadPeople();
+
+        } catch (error) {
+            console.error("Student account generation error:", error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Could not generate student account."
+            );
+
+        } finally {
+            setGeneratingStudentId(null);
+        }
+    }
+
+
+    async function handleRegenerateStudentPassword(student: Student) {
+        const confirmed = window.confirm(
+            `Regenerate the temporary password for ${student.name}?\n\n` +
+            `The student's current password will stop working. ` +
+            `They will need to set a new password at their next login.`
+        );
+
+        if (!confirmed) return;
+
+        setRegeneratingStudentId(student.id);
+
+        try {
+            const {
+                data: { session },
+                error: sessionError,
+            } = await supabase.auth.getSession();
+
+            if (sessionError || !session?.access_token) {
+                throw new Error("Your session has expired. Please log in again.");
+            }
+
+            const response = await fetch(
+                "/api/admin/regenerate-student-password",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        studentId: student.id,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "Password regeneration failed."
+                );
+            }
+
+            const credentials = result.credentials;
+
+            setCredentialModalData({
+                credentials: [
+                    {
+                        studentId: student.id,
+                        studentName: credentials.studentName,
+                        schoolCode: credentials.schoolCode,
+                        username: credentials.username,
+                        temporaryPassword: credentials.temporaryPassword,
+                    },
+                ],
+                failures: [],
+            });
+
+            await loadPeople();
+
+        } catch (error) {
+            console.error("Student password regeneration error:", error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Could not regenerate student password."
+            );
+
+        } finally {
+            setRegeneratingStudentId(null);
+        }
+    }
+
+    async function handleRegenerateSelectedStudentPasswords() {
+        if (selectedAccountStudentIds.length === 0) {
+            alert("Please select at least one student.");
+            return;
+        }
+
+        if (selectedAccountStudentIds.length > 100) {
+            alert("Please select no more than 100 students at a time.");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Regenerate temporary passwords for ${selectedAccountStudentIds.length} students?\n\n` +
+            `Their current passwords will stop working. Each student will need to set a new password at their next login.`
+        );
+
+        if (!confirmed) return;
+
+        setIsBulkRegenerating(true);
+
+        try {
+            const {
+                data: { session },
+                error: sessionError,
+            } = await supabase.auth.getSession();
+
+            if (sessionError || !session?.access_token) {
+                throw new Error("Your session has expired. Please log in again.");
+            }
+
+            const successfulCredentials: GeneratedCredential[] = [];
+            const failures: { studentName: string; error: string }[] = [];
+            const failedStudentIds: string[] = [];
+
+            for (const studentId of selectedAccountStudentIds) {
+                const student = students.find((item) => item.id === studentId);
+
+                if (!student) continue;
+
+                try {
+                    const response = await fetch(
+                        "/api/admin/regenerate-student-password",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify({ studentId }),
+                        }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.error || "Password regeneration failed."
+                        );
+                    }
+
+                    successfulCredentials.push({
+                        studentId: student.id,
+                        studentName: result.credentials.studentName,
+                        schoolCode: result.credentials.schoolCode,
+                        username: result.credentials.username,
+                        temporaryPassword: result.credentials.temporaryPassword,
+                    });
+
+                } catch (error) {
+                    failedStudentIds.push(studentId);
+                    failures.push({
+                        studentName: student.name,
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : "Password regeneration failed.",
+                    });
+                }
+            }
+
+            setCredentialModalData({
+                credentials: successfulCredentials,
+                failures,
+            });
+
+            // Keep failed students selected so the admin can retry.
+            setSelectedAccountStudentIds(
+                selectedAccountStudentIds.filter((id) =>
+                    failedStudentIds.includes(id)
+                )
+            );
+
+            await loadPeople();
+
+        } catch (error) {
+            console.error("Bulk password regeneration error:", error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Bulk password regeneration failed."
+            );
+
+        } finally {
+            setIsBulkRegenerating(false);
+        }
+    }
+
+
+    async function handleGenerateSelectedStudentAccounts() {
+        if (selectedStudentIds.length === 0) {
+            alert("Please select at least one eligible student.");
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Generate login accounts for ${selectedStudentIds.length} selected students?`
+        );
+
+        if (!confirmed) return;
+
+        setIsBulkGenerating(true);
+
+        try {
+            const {
+                data: { session },
+                error: sessionError,
+            } = await supabase.auth.getSession();
+
+            if (sessionError || !session?.access_token) {
+                throw new Error("Your session has expired. Please log in again.");
+            }
+
+            const response = await fetch(
+                "/api/admin/generate-student-accounts",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        studentIds: selectedStudentIds,
+                    }),
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Bulk account generation failed.");
+            }
+
+            const successfulResults = result.results.filter(
+                (item: any) => item.success
+            );
+
+            const failedResults = result.results.filter(
+                (item: any) => !item.success
+            );
+
+            // Keep only failed students selected for a possible retry.
+            setSelectedStudentIds(
+                failedResults.map((item: any) => item.studentId)
+            );
+
+            const credentialsText = successfulResults
+                .map((item: any) => {
+                    const credentials = item.credentials;
+
+                    return (
+                        `Student: ${item.studentName}\n` +
+                        `School Code: ${credentials.schoolCode}\n` +
+                        `Username: ${credentials.username}\n` +
+                        `Temporary Password: ${credentials.temporaryPassword}`
+                    );
+                })
+                .join("\n\n----------------------\n\n");
+
+            const failuresText = failedResults
+                .map((item: any) => {
+                    const studentName =
+                        students.find((student) => student.id === item.studentId)?.name ||
+                        item.studentId;
+
+                    return `${studentName}: ${item.error}`;
+                })
+                .join("\n");
+
+            let message =
+                `Bulk account generation completed!\n\n` +
+                `Total: ${result.summary.total}\n` +
+                `Successful: ${result.summary.successful}\n` +
+                `Failed: ${result.summary.failed}`;
+
+            if (credentialsText) {
+                message += `\n\n===== SUCCESSFUL ACCOUNTS =====\n\n${credentialsText}`;
+            }
+
+            if (failuresText) {
+                message += `\n\n===== FAILED ACCOUNTS =====\n\n${failuresText}`;
+            }
+
+            if (successfulResults.length > 0) {
+                message +=
+                    "\n\nPlease save the temporary credentials securely. Students must change their passwords after first login.";
+            }
+
+            alert(message);
+
+            await loadPeople();
+
+        } catch (error) {
+            console.error("Bulk student account generation error:", error);
+
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Bulk account generation failed."
+            );
+
+        } finally {
+            setIsBulkGenerating(false);
+        }
+    }
+
 
 
     async function handleDeactivateStudent(student: Student) {
@@ -3569,13 +4286,14 @@ ifsc,
                                         </span>
                                     </div>
                                 </div>
-                            )}
-                            {activeTab === "students" && (
+                            )}{activeTab === "students" && (
                                 <div className="p-4 border-b">
                                     <p className="text-sm font-medium text-gray-600 mb-3">
                                         Filter Students
                                     </p>
-                                    <div className="flex flex-wrap items-center gap-3">
+
+                                    {/* ROW 1: Filters */}
+                                    <div className="flex flex-wrap items-center gap-3 mb-3">
                                         <input
                                             type="text"
                                             placeholder="Search admission no., name, email, phone or parent..."
@@ -3624,7 +4342,6 @@ ifsc,
                                             className="border rounded-md px-3 py-2 text-sm bg-white"
                                         >
                                             <option value="all">All Sections</option>
-                                            { }
                                             {Array.from(
                                                 new Map(
                                                     sections
@@ -3672,6 +4389,68 @@ ifsc,
                                         >
                                             Clear Filters
                                         </button>
+                                    </div>
+
+                                    {/* ROW 2: Actions & Count */}
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={toggleSelectAllEligibleStudents}
+                                            disabled={getVisibleEligibleStudents().length === 0}
+                                            className="border rounded-md px-3 py-2 text-sm disabled:opacity-50"
+                                        >
+                                            {getVisibleEligibleStudents().length > 0 &&
+                                                getVisibleEligibleStudents().every((student) =>
+                                                    selectedStudentIds.includes(student.id)
+                                                )
+                                                ? "Deselect All Eligible"
+                                                : "Select All Eligible"}
+                                        </button>
+
+                                        <span className="text-sm text-blue-700 self-center">
+                                            {selectedStudentIds.length} selected
+                                        </span>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSelectedStudentAccounts}
+                                            disabled={selectedStudentIds.length === 0 || isBulkGenerating}
+                                            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                                        >
+                                            {isBulkGenerating
+                                                ? "Generating Accounts..."
+                                                : `Generate Accounts (${selectedStudentIds.length})`}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={toggleSelectAllStudentsWithAccounts}
+                                            disabled={getVisibleStudentsWithAccounts().length === 0}
+                                            className="border rounded-md px-3 py-2 text-sm disabled:opacity-50"
+                                        >
+                                            {getVisibleStudentsWithAccounts().length > 0 &&
+                                                getVisibleStudentsWithAccounts().every((student) =>
+                                                    selectedAccountStudentIds.includes(student.id)
+                                                )
+                                                ? "Deselect All With Accounts"
+                                                : "Select All With Accounts"}
+                                        </button>
+
+                                        <span className="text-sm text-orange-700 self-center">
+                                            {selectedAccountStudentIds.length} selected
+                                        </span>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleRegenerateSelectedStudentPasswords}
+                                            disabled={selectedAccountStudentIds.length === 0 || isBulkRegenerating}
+                                            className="px-4 py-2 rounded-lg border border-orange-500 text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                                        >
+                                            {isBulkRegenerating
+                                                ? "Regenerating Passwords..."
+                                                : `Regenerate Passwords (${selectedAccountStudentIds.length})`}
+                                        </button>
+
                                         <span className="ml-auto text-sm text-gray-500 self-center">
                                             Showing{" "}
                                             {
@@ -3725,6 +4504,7 @@ ifsc,
                                     </div>
                                 </div>
                             )}
+
                             { }
                             {activeTab === "teachers" ? (
                                 teachers.filter((teacher) => {
@@ -3932,10 +4712,58 @@ ifsc,
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[1000px]">
-                                          {/* <table className="w-full min-w-[1500px]"> */}
+                                        {/* <table className="w-full min-w-[1500px]"> */}
                                         <thead className="bg-gray-50">
+                                            {/* <tr>
+                                                <th className="text-left p-4">Admission No.</th> */}
+
                                             <tr>
+                                                {/* <th className="p-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={
+                                                            getVisibleEligibleStudents().length > 0 &&
+                                                            getVisibleEligibleStudents().every((student) =>
+                                                                selectedStudentIds.includes(student.id)
+                                                            )
+                                                        }
+                                                        onChange={toggleSelectAllEligibleStudents}
+                                                        aria-label="Select all eligible students"
+                                                    />
+                                                </th> */}
+
+                                                <th className="p-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={
+                                                            (() => {
+                                                                const eligibleIds = getVisibleEligibleStudents().map(
+                                                                    (student) => student.id
+                                                                );
+
+                                                                const accountIds = getVisibleStudentsWithAccounts().map(
+                                                                    (student) => student.id
+                                                                );
+
+                                                                return (
+                                                                    eligibleIds.length + accountIds.length > 0 &&
+                                                                    eligibleIds.every((id) =>
+                                                                        selectedStudentIds.includes(id)
+                                                                    ) &&
+                                                                    accountIds.every((id) =>
+                                                                        selectedAccountStudentIds.includes(id)
+                                                                    )
+                                                                );
+                                                            })()
+                                                        }
+                                                        onChange={toggleSelectAllSelectableStudents}
+                                                        aria-label="Select or deselect all selectable students"
+                                                    />
+                                                </th>
+
+
                                                 <th className="text-left p-4">Admission No.</th>
+
                                                 <th className="text-left p-4">Student Name</th>
                                                 {/* <th className="text-left p-4">Student Email</th> */}
                                                 <th className="text-left p-4">Student Phone</th>
@@ -3949,8 +4777,8 @@ ifsc,
                                                 <th className="text-left p-4">Status</th>
                                                 {/* <th className="text-right p-4">Actions</th> */}
                                                 <th className="sticky right-0 z-20 bg-gray-50 text-right p-4 whitespace-nowrap">
-    Actions
-</th>
+                                                    Actions
+                                                </th>
                                             </tr>
                                         </thead>
 
@@ -4010,10 +4838,37 @@ ifsc,
                                                     );
 
                                                     return (
+                                                        // <tr key={student.id} className="border-t">
+                                                        //     <td className="p-4">
+                                                        //         {student.admission_no}
+                                                        //     </td>
+
                                                         <tr key={student.id} className="border-t">
+
+                                                            <td className="p-4 text-center">
+                                                                {student.is_active && student.user_id && student.login_username ? (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedAccountStudentIds.includes(student.id)}
+                                                                        onChange={() => toggleAccountStudentSelection(student.id)}
+                                                                        aria-label={`Select ${student.name} for password regeneration`}
+                                                                    />
+                                                                ) : isStudentAccountEligible(student) ? (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedStudentIds.includes(student.id)}
+                                                                        onChange={() => toggleStudentSelection(student.id)}
+                                                                        aria-label={`Select ${student.name} for account generation`}
+                                                                    />
+                                                                ) : null}
+                                                            </td>
+
+
                                                             <td className="p-4">
                                                                 {student.admission_no}
                                                             </td>
+
+
                                                             <td className="p-4 font-medium">
                                                                 {student.name}
                                                             </td>
@@ -4058,8 +4913,56 @@ ifsc,
                                                                 </span>
                                                             </td>
                                                             {/* <td className="p-4"> */}
-                                                                <td className="sticky right-0 z-10 bg-white p-4 whitespace-nowrap">
+                                                            <td className="sticky right-0 z-10 bg-white p-4 whitespace-nowrap">
                                                                 <div className="flex justify-end gap-2">
+
+
+
+                                                                    {student.is_active &&
+                                                                        !student.user_id &&
+                                                                        !student.login_username &&
+                                                                        (() => {
+                                                                            const className =
+                                                                                classes.find((item) => item.id === student.class_id)?.name || "";
+
+                                                                            const normalized = className.trim().toLowerCase();
+
+                                                                            const isEligible =
+                                                                                !/\b(nursery|lkg|ukg|kg|kindergarten)\b/.test(normalized) &&
+                                                                                /\b(10|[1-9])\b/.test(normalized);
+
+                                                                            return isEligible ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleGenerateStudentAccount(student)}
+                                                                                    disabled={generatingStudentId === student.id}
+                                                                                    className="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                                                                                >
+                                                                                    {generatingStudentId === student.id
+                                                                                        ? "Generating..."
+                                                                                        : "Generate Account"}
+                                                                                </button>
+                                                                            ) : null;
+                                                                        })()}
+
+
+
+
+                                                                    {student.is_active &&
+                                                                        student.user_id &&
+                                                                        student.login_username && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRegenerateStudentPassword(student)}
+                                                                                disabled={regeneratingStudentId === student.id}
+                                                                                className="px-4 py-2 rounded-lg border border-orange-300 text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                                                                            >
+                                                                                {regeneratingStudentId === student.id
+                                                                                    ? "Regenerating..."
+                                                                                    : "Regenerate Password"}
+                                                                            </button>
+                                                                        )}
+
 
 
                                                                     <button
@@ -4121,6 +5024,97 @@ ifsc,
                         </div>
                     )}
                 </>
+            )}
+
+
+            {/* Student Credentials Modal */}
+            {credentialModalData && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+                        <div className="mb-4 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-900">
+                                Student Login Credentials
+                            </h2>
+
+                            <button
+                                type="button"
+                                onClick={() => setCredentialModalData(null)}
+                                className="text-2xl text-gray-500 hover:text-gray-800"
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <p className="mb-4 text-sm text-red-600">
+                            Save these credentials now. The temporary password
+                            will not be available to view again after closing.
+                        </p>
+
+                        <div className="max-h-80 space-y-4 overflow-y-auto">
+                            {credentialModalData.credentials.map((item) => (
+                                <div
+                                    key={item.studentId}
+                                    className="rounded-lg border p-4"
+                                >
+                                    <h3 className="mb-3 font-semibold">
+                                        {item.studentName}
+                                    </h3>
+
+                                    <p className="mb-2 text-sm">
+                                        <strong>School Code:</strong>{" "}
+                                        {item.schoolCode}
+                                    </p>
+
+                                    <p className="mb-2 text-sm">
+                                        <strong>Username:</strong>{" "}
+                                        {item.username}
+                                    </p>
+
+                                    <p className="mb-3 text-sm">
+                                        <strong>Temporary Password:</strong>{" "}
+                                        <span className="font-mono font-bold">
+                                            {item.temporaryPassword}
+                                        </span>
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => copySingleCredential(item)}
+                                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                                    >
+                                        Copy Credentials
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-5 flex flex-wrap justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={copyAllCredentials}
+                                className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                            >
+                                Copy All
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={downloadCredentialsCSV}
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700"
+                            >
+                                Download CSV
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setCredentialModalData(null)}
+                                className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-100"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

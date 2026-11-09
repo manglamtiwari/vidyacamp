@@ -54,10 +54,11 @@ export async function updateSession(
 
     const pathname = request.nextUrl.pathname;
 
-    const isPublicRoute =
-        pathname === "/login" ||
-        pathname === "/register" ||
-        pathname === "/auth/confirm";
+const isPublicRoute =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/auth/confirm" ||
+    pathname === "/api/auth/student-login";
 
     const teacherVerifiedUserId =
         request.cookies.get("teacher_verified")?.value;

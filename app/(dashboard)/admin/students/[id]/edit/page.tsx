@@ -9,6 +9,28 @@ import { validatePhone, validateEmail } from "@/lib/validations";
 
 type Student = Record<string, any>;
 
+type AcademicYearOption = {
+    id: string;
+    name: string;
+};
+
+type ClassOption = {
+    id: string;
+    name: string;
+    academic_year_id: string | null;
+};
+
+type SectionOption = {
+    id: string;
+    name: string;
+    class_id: string;
+};
+
+type HouseOption = {
+    id: string;
+    name: string;
+};
+
 type StudentDocument = {
     id: string;
     school_id: string;
@@ -62,16 +84,24 @@ const sections: { title: string; fields: Field[] }[] = [
     {
         title: "Academic Information",
         fields: [
-            { key: "academic_year_id", label: "Academic Year ID" },
-            { key: "class_id", label: "Class ID" },
-            { key: "section_id", label: "Section ID" },
+
+
+            { key: "academic_year_id", label: "Academic Year" },
+            { key: "class_id", label: "Class" },
+            { key: "section_id", label: "Section" },
+            { key: "house_id", label: "House" },
+
             { key: "roll_number", label: "Roll Number" },
-            { key: "house_id", label: "House ID" },
             { key: "stream", label: "Stream" },
             { key: "elective_subjects", label: "Elective Subjects (comma-separated)" },
             { key: "status", label: "Student Status", type: "select", options: ["Active", "Inactive", "Transferred", "Graduated"] },
             { key: "admission_date", label: "Admission Date", type: "date" },
-            { key: "admission_type", label: "Admission Type" },
+            {
+                key: "admission_type",
+                label: "Admission Type",
+                type: "select",
+                options: ["New", "Transfer", "Re-admission"],
+            },
         ],
     },
     {
@@ -230,6 +260,11 @@ export default function StudentEditPage() {
     const [schoolId, setSchoolId] = useState("");
     const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 
+    const [academicYears, setAcademicYears] = useState<AcademicYearOption[]>([]);
+    const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
+    const [sectionOptions, setSectionOptions] = useState<SectionOption[]>([]);
+    const [houseOptions, setHouseOptions] = useState<HouseOption[]>([]);
+
     const loadDocuments = useCallback(async () => {
         const { data, error } = await supabase
             .from("student_documents")
@@ -300,6 +335,50 @@ export default function StudentEditPage() {
                 }
 
                 if (cancelled) return;
+
+                const [
+                    academicYearsResult,
+                    classesResult,
+                    sectionsResult,
+                    housesResult,
+                ] = await Promise.all([
+                    supabase
+                        .from("academic_years")
+                        .select("id, name")
+                        .eq("school_id", membership.school_id)
+                        .order("name"),
+
+                    supabase
+                        .from("classes")
+                        .select("id, name, academic_year_id")
+                        .eq("school_id", membership.school_id)
+                        .order("display_order"),
+
+                    supabase
+                        .from("sections")
+                        .select("id, name, class_id")
+                        .eq("school_id", membership.school_id)
+                        .order("display_order"),
+
+                    supabase
+                        .from("houses")
+                        .select("id, name")
+                        .eq("school_id", membership.school_id)
+                        .order("name"),
+                ]);
+
+                if (academicYearsResult.error) throw academicYearsResult.error;
+                if (classesResult.error) throw classesResult.error;
+                if (sectionsResult.error) throw sectionsResult.error;
+                if (housesResult.error) throw housesResult.error;
+
+                if (cancelled) return;
+
+                setAcademicYears(academicYearsResult.data || []);
+                setClassOptions(classesResult.data || []);
+                setSectionOptions(sectionsResult.data || []);
+                setHouseOptions(housesResult.data || []);
+
 
                 setSchoolId(membership.school_id);
                 setStudent(data);
@@ -653,6 +732,16 @@ export default function StudentEditPage() {
                         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                             {section.fields.map((field) => {
                                 const value = form[field.key];
+                                const availableClasses = classOptions.filter(
+                                    (item) =>
+                                        !form.academic_year_id ||
+                                        !item.academic_year_id ||
+                                        item.academic_year_id === form.academic_year_id
+                                );
+
+                                const availableSections = sectionOptions.filter(
+                                    (item) => item.class_id === form.class_id
+                                );
 
                                 return (
                                     <div
@@ -714,7 +803,73 @@ export default function StudentEditPage() {
                                             {field.label}
                                         </label>
 
-                                        {field.type === "textarea" ? (
+                                        {/* { field.type === "textarea" ? ( */}
+
+                                        {field.key === "academic_year_id" ? (
+                                            <select
+                                                id={field.key}
+                                                value={value ?? ""}
+                                                onChange={(e) => {
+                                                    updateField("academic_year_id", e.target.value);
+                                                    updateField("class_id", "");
+                                                    updateField("section_id", "");
+                                                }}
+                                                className="w-full rounded-lg border border-gray-300 bg-white p-3 outline-none focus:border-emerald-500"
+                                            >
+                                                <option value="">Select Academic Year</option>
+                                                {academicYears.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : field.key === "class_id" ? (
+                                            <select
+                                                id={field.key}
+                                                value={value ?? ""}
+                                                onChange={(e) => {
+                                                    updateField("class_id", e.target.value);
+                                                    updateField("section_id", "");
+                                                }}
+                                                className="w-full rounded-lg border border-gray-300 bg-white p-3 outline-none focus:border-emerald-500"
+                                            >
+                                                <option value="">Select Class</option>
+                                                {availableClasses.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : field.key === "section_id" ? (
+                                            <select
+                                                id={field.key}
+                                                value={value ?? ""}
+                                                onChange={(e) => updateField("section_id", e.target.value)}
+                                                disabled={!form.class_id}
+                                                className="w-full rounded-lg border border-gray-300 bg-white p-3 outline-none focus:border-emerald-500 disabled:bg-gray-100"
+                                            >
+                                                <option value="">Select Section</option>
+                                                {availableSections.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : field.key === "house_id" ? (
+                                            <select
+                                                id={field.key}
+                                                value={value ?? ""}
+                                                onChange={(e) => updateField("house_id", e.target.value)}
+                                                className="w-full rounded-lg border border-gray-300 bg-white p-3 outline-none focus:border-emerald-500"
+                                            >
+                                                <option value="">Select House</option>
+                                                {houseOptions.map((item) => (
+                                                    <option key={item.id} value={item.id}>
+                                                        {item.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : field.type === "textarea" ? (
                                             <textarea
                                                 id={field.key}
                                                 value={value ?? ""}

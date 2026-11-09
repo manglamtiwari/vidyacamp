@@ -14,6 +14,7 @@ import {
     Home,
 } from "lucide-react";
 
+import { getCurrentSchoolMembership } from "@/lib/getCurrentSchoolMembership";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,41 +31,24 @@ export default function Sidebar() {
         useState(false);
 
     useEffect(() => {
+
         async function getUserDetails() {
             const {
-                data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-                router.replace("/login");
-                return;
-            }
-
-            const {
-                data: membership,
+                membership,
                 error: membershipError,
-            } = await supabase
-                .from("school_users")
-                .select("school_id, role")
-                .eq("user_id", user.id)
-                .eq("status", "active")
-                .limit(1)
-                .maybeSingle();
+            } = await getCurrentSchoolMembership();
 
-            if (
-                membershipError ||
-                !membership
-            ) {
+            if (membershipError || !membership) {
                 console.error(
                     "Could not load school membership:",
                     membershipError
                 );
+
+                router.replace("/login");
                 return;
             }
 
-            setUserRole(
-                membership.role as UserRole
-            );
+            setUserRole(membership.role);
 
             const {
                 data: school,
@@ -72,16 +56,10 @@ export default function Sidebar() {
             } = await supabase
                 .from("schools")
                 .select("school_name")
-                .eq(
-                    "id",
-                    membership.school_id
-                )
+                .eq("id", membership.school_id)
                 .single();
 
-            if (
-                schoolError ||
-                !school
-            ) {
+            if (schoolError || !school) {
                 console.error(
                     "Could not load school:",
                     schoolError
@@ -89,10 +67,11 @@ export default function Sidebar() {
                 return;
             }
 
-            setSchoolName(
-                school.school_name
-            );
+            setSchoolName(school.school_name);
         }
+
+        getUserDetails();
+
 
         getUserDetails();
     }, [router]);

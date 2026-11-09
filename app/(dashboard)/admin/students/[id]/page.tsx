@@ -18,12 +18,12 @@ function Detail({
         value === null || value === undefined || value === ""
             ? "Not provided"
             : typeof value === "boolean"
-              ? value
-                  ? "Yes"
-                  : "No"
-              : Array.isArray(value)
-                ? value.join(", ") || "Not provided"
-                : String(value);
+                ? value
+                    ? "Yes"
+                    : "No"
+                : Array.isArray(value)
+                    ? value.join(", ") || "Not provided"
+                    : String(value);
 
     return (
         <div className="min-w-0">
@@ -52,6 +52,38 @@ function Section({
             </div>
         </section>
     );
+}
+
+function formatDateTime(value: unknown) {
+    if (!value) return "Not provided";
+
+    const date = new Date(String(value));
+
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    return new Intl.DateTimeFormat("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+    }).format(date);
+}
+
+function formatDate(value: unknown) {
+    if (!value) return "Not provided";
+
+    const date = new Date(`${value}T00:00:00`);
+
+    if (Number.isNaN(date.getTime())) return String(value);
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
 }
 
 export default function StudentProfilePage() {
@@ -86,9 +118,68 @@ export default function StudentProfilePage() {
             } else if (!data) {
                 setErrorMessage("Student not found.");
                 setStudent(null);
+                // } else {
+                //     setStudent(data);
+                // }
+
+
             } else {
-                setStudent(data);
+                const [
+                    classResult,
+                    sectionResult,
+                    academicYearResult,
+                    houseResult,
+                ] = await Promise.all([
+                    data.class_id
+                        ? supabase
+                            .from("classes")
+                            .select("name")
+                            .eq("id", data.class_id)
+                            .eq("school_id", data.school_id)
+                            .maybeSingle()
+                        : Promise.resolve({ data: null }),
+
+                    data.section_id
+                        ? supabase
+                            .from("sections")
+                            .select("name")
+                            .eq("id", data.section_id)
+                            .eq("school_id", data.school_id)
+                            .maybeSingle()
+                        : Promise.resolve({ data: null }),
+
+                    data.academic_year_id
+                        ? supabase
+                            .from("academic_years")
+                            .select("name")
+                            .eq("id", data.academic_year_id)
+                            .eq("school_id", data.school_id)
+                            .maybeSingle()
+                        : Promise.resolve({ data: null }),
+
+                    data.house_id
+                        ? supabase
+                            .from("houses")
+                            .select("name")
+                            .eq("id", data.house_id)
+                            .eq("school_id", data.school_id)
+                            .maybeSingle()
+                        : Promise.resolve({ data: null }),
+                ]);
+
+                if (!isMounted) return;
+
+                setStudent({
+                    ...data,
+                    class_name: classResult.data?.name,
+                    section_name: sectionResult.data?.name,
+                    academic_year_name: academicYearResult.data?.name,
+                    house_name: houseResult.data?.name,
+                });
             }
+
+
+
 
             setIsLoading(false);
         }
@@ -204,7 +295,7 @@ export default function StudentProfilePage() {
                 <Detail label="Full Name" value={student.name} />
                 <Detail label="Registration No." value={student.registration_no} />
                 <Detail label="Admission No." value={student.admission_no} />
-                <Detail label="Date of Birth" value={student.date_of_birth} />
+                <Detail label="Date of Birth" value={formatDate(student.date_of_birth)} />
                 <Detail label="Gender" value={student.gender} />
                 <Detail label="Blood Group" value={student.blood_group} />
                 <Detail label="Nationality" value={student.nationality} />
@@ -234,10 +325,14 @@ export default function StudentProfilePage() {
             {/* Academic information */}
             <Section title="Academic Information">
                 <Detail label="Roll Number" value={student.roll_number} />
-                <Detail label="Class ID" value={student.class_id} />
+                {/* <Detail label="Class ID" value={student.class_id} />
                 <Detail label="Section ID" value={student.section_id} />
                 <Detail label="Academic Year ID" value={student.academic_year_id} />
-                <Detail label="House ID" value={student.house_id} />
+                <Detail label="House ID" value={student.house_id} /> */}
+                <Detail label="Class" value={student.class_name} />
+                <Detail label="Section" value={student.section_name} />
+                <Detail label="Academic Year" value={student.academic_year_name} />
+                <Detail label="House" value={student.house_name} />
                 <Detail label="Stream" value={student.stream} />
                 <Detail
                     label="Elective Subjects"
@@ -245,7 +340,7 @@ export default function StudentProfilePage() {
                 />
                 <Detail label="Student Status" value={student.status} />
                 <Detail label="Active Account" value={student.is_active} />
-                <Detail label="Admission Date" value={student.admission_date} />
+                <Detail label="Admission Date" value={formatDate(student.admission_date)} />
                 <Detail label="Admission Type" value={student.admission_type} />
             </Section>
 
@@ -470,8 +565,8 @@ export default function StudentProfilePage() {
             {/* Additional information */}
             <Section title="Additional Information">
                 <Detail label="Remarks" value={student.remarks} />
-                <Detail label="Created At" value={student.created_at} />
-                <Detail label="Last Updated" value={student.last_updated} />
+                <Detail label="Created At" value={formatDateTime(student.created_at)} />
+                <Detail label="Last Updated" value={formatDateTime(student.last_updated)} />
             </Section>
         </div>
     );
