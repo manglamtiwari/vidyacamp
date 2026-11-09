@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { getUserRole } from "@/lib/getUserRole";
 
@@ -25,6 +26,40 @@ export default function StudentDashboardPage() {
                 router.replace(`/${role}/dashboard`);
                 return;
             }
+
+            const {
+                data: { session },
+            } = await createClient().auth.getSession();
+
+            if (!session?.access_token) {
+                router.replace("/login");
+                return;
+            }
+
+            const response = await fetch(
+                "/api/auth/student/change-password-complete",
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                    },
+                    cache: "no-store",
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                router.replace("/login");
+                return;
+            }
+
+            if (result.mustChangePassword) {
+                router.replace("/student/change-password");
+                return;
+            }
+
+
 
             setHasAccess(true);
             setIsCheckingAccess(false);
